@@ -68,7 +68,9 @@ jobs:
 
       - name: Cache a custom directory
         id: toolcache                        # id lets us read `cache-hit` later
-        uses: actions/cache@v4
+        uses: actions/cache@v6           # v4 still works but is a Node 20 build,
+                                         # so every run prints the "Node.js 20 is
+                                         # deprecated" warning. v5+ is Node 24.
         with:
           # WHAT to cache — one path or a multi-line list.
           path: ~/.my-tool-cache
@@ -82,7 +84,8 @@ jobs:
           # A partial hit restores an older cache that we then top up.
           restore-keys: |
             ${{ runner.os }}-tools-
-
+            
+      # https://emn178.github.io/online-tools/sha256.html
       # `cache-hit` is 'true' ONLY on an exact `key` match. A restore-keys
       # hit leaves it false — a subtlety that catches people out.
       - name: Populate the cache (slow path)

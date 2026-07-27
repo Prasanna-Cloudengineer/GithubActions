@@ -27,7 +27,7 @@ GitHub Actions Full Course — Matrix, Caching, Artifacts, Reusable Workflows, P
 
 *Welcome back to Learn With Mithran! In the previous session you connected jobs into a multi-job pipeline with `needs` and `if`. Today we make it production-grade — the kind of pipeline a real team actually ships.*
 
-We start by passing data between jobs with **outputs** and `$GITHUB_OUTPUT`, then test across a **matrix** of Node versions and operating systems (`include`, `exclude`, `fail-fast`, `max-parallel`). We speed everything up with **dependency caching** and share real files between jobs using **artifacts v4** — including the immutable-artifact trap that breaks migrated matrix workflows, and how to merge reports back together. Then we stop copy-pasting YAML forever with **reusable workflows** and **composite actions**, and learn exactly which one to reach for. We finish by hardening the pipeline: locking down `GITHUB_TOKEN` with least-privilege **permissions**, gating production behind a **required human approval** using environments, and controlling cost and races with **concurrency** and **timeouts** — all brought together in a full **build → test → deploy** capstone. 🚀
+We start by passing data between jobs with **outputs** and `$GITHUB_OUTPUT`, then test across a **matrix** of Node versions and operating systems (`include`, `exclude`, `fail-fast`, `max-parallel`). We speed everything up with **dependency caching** and share real files between jobs using **artifacts** — including the immutable-artifact trap that breaks migrated matrix workflows, and how to merge reports back together. Then we stop copy-pasting YAML forever with **reusable workflows** and **composite actions**, and learn exactly which one to reach for. We finish by hardening the pipeline: locking down `GITHUB_TOKEN` with least-privilege **permissions**, gating production behind a **required human approval** using environments, and controlling cost and races with **concurrency** and **timeouts** — all brought together in a full **build → test → deploy** capstone. 🚀
 
 **Still 100% browser-based — no local setup, nothing to install.** Every workflow file used in this video is prebuilt in the GitHub repo below. Copy, commit, watch it run.
 
@@ -61,8 +61,8 @@ Greens Technologys, Perumbakkam (https://maps.app.goo.gl/u34U3rXu8zPFfQh5A)
 🔹 `fail-fast` and `max-parallel` — controlling a matrix
 🔹 Dependency caching — cache keys, `hashFiles()`, `restore-keys` and the immutable-key bug
 🔹 Cache vs artifact — the difference people get wrong
-🔹 Artifacts v4 — upload, download, and why v3 workflows now fail outright
-🔹 The v4 matrix trap — "an artifact with this name already exists" and how to fix it
+🔹 Artifacts — upload, download, and which majors are current (upload@v7 / download@v8)
+🔹 The immutable-artifact matrix trap — "an artifact with this name already exists" and how to fix it
 🔹 Merging matrix artifacts with `upload-artifact/merge` and `merge-multiple`
 🔹 Reusable workflows — `workflow_call`, typed inputs, secrets and outputs
 🔹 Composite actions — bundling steps, the mandatory `shell:`, and the checkout chicken-and-egg
@@ -92,8 +92,8 @@ Greens Technologys, Perumbakkam (https://maps.app.goo.gl/u34U3rXu8zPFfQh5A)
 39:00 `fail-fast` and `max-parallel`
 47:00 Caching Dependencies — Keys, hashFiles and restore-keys
 1:01:00 Cache vs Artifact — The Difference That Matters
-1:07:00 Artifacts v4 — Upload and Download Between Jobs
-1:19:00 The v4 Matrix Trap and How to Merge Artifacts
+1:07:00 Artifacts — Upload and Download Between Jobs
+1:19:00 The Immutable-Artifact Matrix Trap and How to Merge Artifacts
 1:29:00 Reusable Workflows — `workflow_call` and Typed Inputs
 1:43:00 Calling a Reusable Workflow (and Matrixing It)
 1:53:00 Composite Actions — Bundling Repeated Steps

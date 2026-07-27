@@ -2,7 +2,7 @@
 
 A hands-on, project-driven course that takes you from *never having written a line of YAML* to *building secure, production-grade CI/CD pipelines* with GitHub Actions. Built for a YouTube audience, it is structured as four self-contained days of roughly **2–4 hours of video each**, mixing short concept explainers with live, buildable demos.
 
-Everything is taught against the **current (2026) GitHub Actions platform and terminology** — current action versions, artifact actions **v4**, OIDC cloud authentication, SHA-pinning and immutable-actions guidance, and least-privilege `GITHUB_TOKEN` defaults.
+Everything is taught against the **current (2026) GitHub Actions platform and terminology** — current action versions, Node 24 artifact actions, OIDC cloud authentication, SHA-pinning and immutable-actions guidance, and least-privilege `GITHUB_TOKEN` defaults.
 
 ---
 
@@ -29,7 +29,7 @@ By the end of the course you will be able to:
 2. Read and write workflow YAML confidently, using triggers, contexts, expressions, and variables.
 3. Consume Marketplace actions correctly and pin them safely.
 4. Build multi-job pipelines with dependencies (`needs`), conditionals (`if`), job outputs, and **matrix** strategies.
-5. Speed up and connect jobs using **dependency caching** and **artifacts (v4)**.
+5. Speed up and connect jobs using **dependency caching** and **artifacts**.
 6. Choose correctly between **reusable workflows**, **composite actions**, and **custom (JavaScript/Docker) actions**, and build each.
 7. Manage secrets, **environments**, and **deployment protection rules** (approvals, wait timers, branch policies).
 8. Apply security hardening: **least-privilege `GITHUB_TOKEN`**, **SHA pinning / immutable actions**, third-party action risk management, secret scanning, and CodeQL.
@@ -108,8 +108,8 @@ By the end of the course you will be able to:
    2. `fail-fast` and `max-parallel` for controlling matrix behavior.
 3. **Caching and artifacts**
    1. **Dependency caching** with `actions/cache` (and built-in caching in setup actions): cache keys, `hashFiles()`, `restore-keys`, and the immutable-key bug.
-   2. **Artifacts v4** — `actions/upload-artifact@v4` / `download-artifact@v4`; the v3 actions were fully retired (Jan 30, 2025), so v4 is the standard.
-   3. v4 behavior to know: artifacts are **immutable**, artifact **names must be unique** per run (no appending across parallel jobs), and the `upload-artifact/merge` action for combining matrix outputs.
+   2. **Artifacts** — `actions/upload-artifact@v7` / `download-artifact@v8` (the two actions are on different majors — they ship independently). Anything on or below `upload@v5` / `download@v6` triggers the "Node.js 20 is deprecated" warning; the v3 actions were fully retired (Jan 30, 2025) and fail outright.
+   3. Behavior to know: artifacts are **immutable**, artifact **names must be unique** per run (no appending across parallel jobs), and the `upload-artifact/merge` action for combining matrix outputs.
 4. **Reuse: choosing the right building block**
    1. **Reusable workflows** (`on: workflow_call`, typed `inputs`/`secrets`/`outputs`) — reuse an entire job.
    2. **Composite actions** — bundle multiple steps into one local/shared action.

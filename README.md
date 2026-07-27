@@ -632,7 +632,7 @@ flowchart TD
 
 # Day 3 — Production pipelines: reuse, security & gated deploys
 
-**Goal:** take the multi-job pipeline from the previous day and make it *production-grade* — pass data between jobs with **outputs**, test across a **matrix**, **cache** dependencies and share files with **artifacts (v4)**, stop copy-pasting YAML with **reusable workflows** and **composite actions**, lock down `GITHUB_TOKEN` with least-privilege **permissions**, gate deploys behind a **human approval** with environments, and control cost with **concurrency** and **timeouts** — ending in a full **build → test → deploy** capstone.
+**Goal:** take the multi-job pipeline from the previous day and make it *production-grade* — pass data between jobs with **outputs**, test across a **matrix**, **cache** dependencies and share files with **artifacts**, stop copy-pasting YAML with **reusable workflows** and **composite actions**, lock down `GITHUB_TOKEN` with least-privilege **permissions**, gate deploys behind a **human approval** with environments, and control cost with **concurrency** and **timeouts** — ending in a full **build → test → deploy** capstone.
 
 The workflow files are in [`day-03/workflows/`](day-03/workflows/) (`20`–`34`), with the composite action in [`day-03/actions/`](day-03/actions/).
 
@@ -736,8 +736,8 @@ Two ways, and you should reach for the first:
 - uses: actions/setup-node@v6
   with: { node-version: '20', cache: 'npm', cache-dependency-path: 'sample-app/package-lock.json' }
 
-# B — actions/cache@v4 (full control over any directory)
-- uses: actions/cache@v4
+# B — actions/cache@v6 (full control over any directory)
+- uses: actions/cache@v6
   with:
     path: ~/.my-tool-cache
     key: ${{ runner.os }}-tools-${{ hashFiles('sample-app/package-lock.json') }}
@@ -763,22 +763,26 @@ Outputs move a string; **artifacts move real files** — a compiled bundle, a te
 
 ```mermaid
 flowchart LR
-    B["build job<br/>upload-artifact@v4"] -->|"named bundle"| Store["GitHub storage"]
-    Store --> T["test job<br/>download-artifact@v4"]
+    B["build job<br/>upload-artifact@v7"] -->|"named bundle"| Store["GitHub storage"]
+    Store --> T["test job<br/>download-artifact@v8"]
 ```
 
 ```yaml
-- uses: actions/upload-artifact@v4
+- uses: actions/upload-artifact@v7
   with:
     name: app-build
     path: sample-app/dist/       # ⚠️ ALWAYS relative to repo root — working-directory does NOT apply
     if-no-files-found: error     # 'warn' (default) hides a broken build
 # ...in a later job:
-- uses: actions/download-artifact@v4
+- uses: actions/download-artifact@v8
   with: { name: app-build, path: downloaded-build }
 ```
 
-> ⚠️ **Use v4.** The v3 artifact actions were **fully retired on 30 Jan 2025** — any workflow still calling them fails outright, so older tutorials are broken. v4 artifacts are **immutable** (a second upload to the same name **fails**), names must be **unique** per run, and each artifact is downloadable the moment its job finishes.
+> ⚠️ **The two actions are not on the same major — upload is `v7`, download is `v8`.** They ship independently; don't "fix" the mismatch. Anything at or below `upload@v5` / `download@v6` runs on Node 20, and GitHub now prints *"Node.js 20 is deprecated… being forced to run on Node.js 24"* — that warning is your cue to bump the major. (Self-hosted runners need **2.327.1+** for the Node 24 builds.) The v3 artifact actions were **fully retired on 30 Jan 2025** and fail outright, so older tutorials are broken.
+
+> **The rules that define artifacts** (unchanged since v4): artifacts are **immutable** — a second upload to the same name **fails** unless you pass `overwrite: true`; names must be **unique** per run; and each artifact is downloadable the moment its job finishes. Newer since: `upload@v7` adds `archive: false` to upload a single file un-zipped, and `download@v8` verifies the SHA-256 digest and **fails on a mismatch by default** (`digest-mismatch: ignore|info|warn|error`).
+
+> 📋 **Setup:** this one runs `npm run build`. If your practice repo dates from Day 1 you have the older `sample-app` and the build job dies with `npm error Missing script: "build"` — re-copy **`sample-app/package.json`** and **`sample-app/build.js`**. The lockfile is unchanged (adding a *script* doesn't invalidate it), which is why `npm ci` passes and only the build step fails.
 
 **What to observe:** the run summary has an **Artifacts** box you can download in the browser. The `download-artifact` job proves the files crossed the machine boundary onto a fresh runner with no checkout. A third job uses `if: failure()` to rescue logs from a broken run — the real-world reason artifacts matter.
 
@@ -792,14 +796,14 @@ Put an upload **inside a matrix** with a fixed `name:` and rows 2 and 3 fail:
 
 > `Conflict: an artifact with this name already exists on the workflow run`
 
-Because v4 names are immutable/unique, this is the **single most common migration breakage**. The fix has two halves:
+Because artifact names are immutable/unique, this is the **single most common migration breakage**. The fix has two halves:
 
 1. **Upload under a unique name per row** — include every matrix dimension: `name: report-node-${{ matrix.node }}` (a 2-D grid needs `report-${{ matrix.os }}-${{ matrix.node }}`).
 2. **Optionally merge** them back:
 
 | Method | Result | Best when |
 |---|---|---|
-| `actions/upload-artifact/merge@v4` (with `pattern:`) | A new combined artifact in the UI | A human downloads one zip |
+| `actions/upload-artifact/merge@v7` (with `pattern:`) | A new combined artifact in the UI | A human downloads one zip |
 | `download-artifact` + `pattern:` + `merge-multiple: true` | All files onto one runner | A later **job** processes them |
 
 **What to observe:** the run lists `report-node-20/22/24`, then a single `all-test-reports` after the merge. The summarise job writes a table to `$GITHUB_STEP_SUMMARY` — an underused way to surface results without opening logs.
@@ -1174,6 +1178,8 @@ flowchart LR
 
 > 🔑 **The permission:** `packages: write` (GHCR is a "package"). `metadata-action` turns a `v1.2.3` tag into `1.2.3`, `1.2`, `1`, `latest` and every push into a `sha-…` tag, so you never hand-write tags. Add `id-token: write` for signed build provenance. The image appears under the repo's **Packages**, pullable with `docker pull ghcr.io/OWNER/REPO:latest`.
 
+> 📋 **Setup:** none beyond the app — [`sample-app/Dockerfile`](sample-app/Dockerfile) ships with the course. Note `context: ./sample-app` in the build step: the context is the **folder holding the Dockerfile**, and every `COPY` inside it is relative to that, not to the repo root.
+
 ---
 
 ## 39 — Custom JavaScript actions
@@ -1270,7 +1276,7 @@ SHA-pinned actions, least-privilege `permissions`, CodeQL + secret-scan gates, a
 
 > 🔑 It's the union of the whole course: least privilege (§25), environments/approval (§26), build-once/deploy-same-artifact (§29), SHA pinning (§30), scanning (§31–32), GHCR (§38), and keyless OIDC (§34) — the shape a security-conscious team actually ships.
 
-**📋 Setup:** a `Dockerfile` in `sample-app/`, the `production` environment with a required reviewer, and (for the deploy) an AWS role trusting this repo's OIDC `sub` claim in `vars.AWS_ROLE_ARN`. Remove the OIDC step to run without a cloud account.
+**📋 Setup:** the `sample-app/` folder (it ships the `Dockerfile` this builds), the `production` environment with a required reviewer, and (for the deploy) an AWS role trusting this repo's OIDC `sub` claim in `vars.AWS_ROLE_ARN`. Remove the OIDC step to run without a cloud account.
 
 ---
 
@@ -1342,8 +1348,8 @@ jobs:                        # WHAT runs (parallel by default)
 | Pass a value between jobs | Job `outputs:` + `${{ needs.job.outputs.x }}` |
 | Test many versions/OSes | `strategy: { matrix: { node: [20, 22, 24] } }` |
 | Keep all matrix rows running | `strategy: { fail-fast: false }` |
-| Speed up installs | `cache: 'npm'` on setup-node, or `actions/cache@v4` |
-| Share a file between jobs | `upload-artifact@v4` → `download-artifact@v4` |
+| Speed up installs | `cache: 'npm'` on setup-node, or `actions/cache@v6` |
+| Share a file between jobs | `upload-artifact@v7` → `download-artifact@v8` |
 | Reuse a whole job | `uses: ./.github/workflows/x.yml` (job level) |
 | Reuse a few steps | Composite action + `uses: ./.github/actions/x` |
 | Lock down the token | `permissions: { contents: read }` |

@@ -46,6 +46,10 @@ jobs:
           echo "timestamp=$(date -u +%FT%TZ)" >> "$GITHUB_OUTPUT"
           echo "Computed version $VERSION"
 
+      - name: Accessing from another step
+        run: |
+          echo "${{ steps.meta.outputs.version }}"
+
       # MULTI-LINE values need a random delimiter. A bare newline would be
       # read as the start of the next key and silently truncate your value.
       - name: A multi-line output

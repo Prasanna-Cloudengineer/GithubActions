@@ -4,13 +4,15 @@
 #
 #   ✅ least-privilege `permissions` (30)     ✅ matrix testing (21-23)
 #   ✅ `concurrency` control (32)             ✅ dependency caching (24)
-#   ✅ multi-job DAG with `needs` (17)        ✅ artifacts v4 (25, 26)
+#   ✅ multi-job DAG with `needs` (17)        ✅ artifacts (25, 26)
 #   ✅ `if` + status functions (18, 19)       ✅ a REUSABLE WORKFLOW (27, 28)
 #   ✅ job outputs (20)                       ✅ environments + approval (31)
 #   ✅ timeouts (33)
 #
 # 📋 SETUP — copy these into your practice repo before running:
-#     sample-app/                                        (the whole folder)
+#     sample-app/           (the whole folder — RE-COPY it even if you think
+#                            you have it. A Day 1 copy has no `build` script
+#                            and the build job fails: Missing script: "build")
 #     .github/workflows/34-pipeline-capstone.yml         (this file)
 #     .github/workflows/27-reusable-workflow-callee.yml  (the test job it calls)
 #   Then create the `staging` and `production` environments described in
@@ -120,7 +122,7 @@ jobs:
       # environment means staging and production are not actually the same
       # artifact — the classic "it worked in staging" bug.
       - name: Upload the build
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: app-build-${{ steps.meta.outputs.version }}
           path: sample-app/dist/       # `uses:` paths are always repo-root relative
@@ -142,7 +144,7 @@ jobs:
 
     steps:
       - name: Fetch the exact artifact build produced
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: app-build-${{ needs.build.outputs.version }}
           path: dist
@@ -172,7 +174,7 @@ jobs:
 
     steps:
       - name: Fetch the SAME artifact staging used
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: app-build-${{ needs.build.outputs.version }}
           path: dist

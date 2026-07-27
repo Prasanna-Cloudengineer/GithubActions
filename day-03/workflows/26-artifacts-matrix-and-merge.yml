@@ -1,25 +1,25 @@
-# 26 - Artifacts from a MATRIX (the v4 gotcha) and how to merge them
+# 26 - Artifacts from a MATRIX (the immutability gotcha) and how to merge them
 #
 # THE PROBLEM
 # Put an upload step inside a matrix and every row runs the same code:
 #
-#     - uses: actions/upload-artifact@v4
+#     - uses: actions/upload-artifact@v7
 #       with:
 #         name: test-results          # <-- identical in all 3 rows
 #
 # Row 1 uploads fine. Rows 2 and 3 FAIL with:
 #     "Conflict: an artifact with this name already exists on the workflow run"
 #
-# Because v4 artifacts are IMMUTABLE, a name can be written exactly once per
-# run. Under v3 the files quietly merged, so this is the single most common
-# breakage when migrating an old workflow.
+# Because artifacts are IMMUTABLE (v4 onwards), a name can be written exactly
+# once per run. Under v3 the files quietly merged, so this is the single most
+# common breakage when migrating an old workflow.
 #
 # THE FIX (two halves)
 #   1. UPLOAD under a unique name per row — include the matrix values.
 #   2. Optionally MERGE them back into one downloadable bundle afterwards.
 #
 # TWO WAYS TO MERGE — pick one:
-#   a) actions/upload-artifact/merge@v4   -> makes a NEW combined artifact in
+#   a) actions/upload-artifact/merge@v7   -> makes a NEW combined artifact in
 #                                            the UI. Best when a human will
 #                                            download one zip.
 #   b) download-artifact with `pattern:` + `merge-multiple: true`
@@ -67,7 +67,12 @@ jobs:
           npm test 2>&1 | tee "reports/results-node-${{ matrix.node }}.txt"
 
       - name: Upload this row's report
-        uses: actions/upload-artifact@v4
+        # A failed test step fails the JOB, and every later step is skipped by
+        # default — so without this you lose the report for exactly the row you
+        # most wanted to read. `always()` uploads it either way, which is what
+        # makes the `if: always()` on the merge job below meaningful.
+        if: always()
+        uses: actions/upload-artifact@v7
         with:
           # ✅ THE FIX: the matrix value makes the name unique per row.
           #    Include EVERY matrix dimension you vary, or two rows collide.
@@ -83,7 +88,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Merge every report-* artifact into one
-        uses: actions/upload-artifact/merge@v4
+        uses: actions/upload-artifact/merge@v7
         with:
           name: all-test-reports        # the new, combined artifact
           pattern: report-*             # glob over the existing artifact NAMES
@@ -97,7 +102,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download all matrix reports at once
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: report-*             # no `name:` — a pattern instead
           merge-multiple: true          # flatten into ONE folder.

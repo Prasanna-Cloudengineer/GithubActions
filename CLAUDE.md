@@ -43,7 +43,7 @@ Day 1 (§1–7) and Day 2 (§8–15, through status functions) are written in th
 - Every file opens with a **comment block that teaches the concept** before any YAML. These comments are primary course content — they're what a learner reads when they open the file on GitHub. Preserve and extend them; don't strip them as "noise."
 - Most single-concept demos trigger on `on: workflow_dispatch` so they can be run on demand during recording. The trigger-teaching files (02–07) and the capstone (15) are the exceptions that use real events.
 - Inline comments call out the failure mode, not just the happy path (e.g. why `paths: 'src/**'` silently matches nothing, why `cache-dependency-path` is needed). That "here's the error message you'll actually see" style is the house style.
-- Action versions are pinned to the **2026 platform state** the course teaches: `actions/checkout@v5`, `actions/setup-node@v6`, `actions/cache@v4`, artifact actions v4. Don't downgrade these to older majors seen elsewhere online.
+- Action versions are pinned to the **2026 platform state** the course teaches: `actions/checkout@v5`, `actions/setup-node@v6`, `actions/cache@v6`, `actions/upload-artifact@v7` (and `upload-artifact/merge@v7`), `actions/download-artifact@v8`. Don't downgrade these to older majors seen elsewhere online, and don't "align" the two artifact majors — they ship independently. Anything on or below `upload-artifact@v5` / `download-artifact@v6` is Node 20 and triggers a deprecation warning on every run.
 - Several demos **fail on purpose** (a red matrix row, a denied API write, a hung step). That is the lesson, not a bug — check the file's header comment before "fixing" a failure.
 
 Validate YAML after editing any workflow; a plain scalar containing `": "` is the error that actually shows up here:
@@ -64,17 +64,20 @@ That `run:` vs `uses:` path asymmetry is itself a taught lesson in [README.md](R
 
 ## sample-app commands
 
-Zero dependencies; uses Node's built-in test runner. Node is not installed in this dev environment, so these normally only run on a CI runner:
+Zero dependencies; uses Node's built-in test runner. Node **is** available locally (v24.x), so these can be run here to sanity-check a demo before recording:
 
 ```bash
 cd sample-app
-npm run lint                        # node --check src/math.js (syntax only, no ESLint)
+npm run lint                        # node --check on each src file (syntax only, no ESLint)
 npm test                            # node --test  — discovers test/*.test.js
 node --test test/math.test.js       # a single test file
 npm run build                       # node build.js -> dist/ (added for Day 2 artifacts)
+npm start                           # node src/index.js — also the Dockerfile's CMD
 ```
 
-`package.json` is `"type": "module"` — the app uses ESM `import`/`export`. `dist/` is gitignored: Day 2 workflows rebuild it and upload it as an artifact, which is the point of the build stage.
+`package.json` is `"type": "module"` — the app uses ESM `import`/`export`, and import paths need the `.js` extension. Dropping in a CommonJS file (a `require()` test copied from elsewhere) kills the whole `node --test` run with *"require is not defined in ES module scope"* before any assertion runs; [sample-app/README.md](sample-app/README.md) documents that trap for learners. `dist/` and `reports/` are gitignored: Day 2 workflows rebuild `dist/` and upload it as an artifact, which is the point of the build stage.
+
+`sample-app/Dockerfile` (+ `.dockerignore`) exists for Day 4 files 44 and 49, built with `context: ./sample-app`. `src/index.js` is its `CMD` — the app's only entry point; everything else is library code.
 
 Day 2 workflows use `npm ci` rather than Day 1's `npm install` (deterministic, and it fails loudly when `package.json` and the lockfile disagree). Adding a *script* to `package.json` doesn't invalidate the lockfile; adding a *dependency* would, and would also break the "zero dependencies, nothing to install" promise.
 
@@ -91,6 +94,6 @@ Day 3 breaks that one-file-at-a-time rule in three places, and the READMEs call 
 Day 4 adds more of these, and several files are **intentionally not runnable in a vanilla repo** (they teach a concept that needs external infra):
 
 - **45** needs `.github/actions/greet-js/` (action.yml + index.js) copied alongside it; **46** needs `.github/actions/greet-docker/` (action.yml + Dockerfile + entrypoint.sh).
-- **39** / **49** (OIDC) need a cloud IAM role trusting the repo's OIDC `sub` claim, ARN in `vars.AWS_ROLE_ARN`; **44** / **49** (GHCR) need a `Dockerfile` in `sample-app/` (not shipped — the header/README give a minimal one); **40** (self-hosted) sits Queued unless a matching runner is online. These "won't just run" states are deliberate teaching points — check the header before "fixing" them.
+- **39** / **49** (OIDC) need a cloud IAM role trusting the repo's OIDC `sub` claim, ARN in `vars.AWS_ROLE_ARN`; **40** (self-hosted) sits Queued unless a matching runner is online. These "won't just run" states are deliberate teaching points — check the header before "fixing" them. (**44** / **49** build `sample-app/Dockerfile`, which *is* shipped — those need no extra setup beyond the folder.)
 
 The course also depends on repo-level state a learner must create by hand: the `MY_API_KEY` secret (Day 2, file 14), and the two environments with a required reviewer on `production` (Day 3, files 31 and 34).

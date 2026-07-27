@@ -5,3 +5,7 @@ dist/
 
 # No dependencies today, but this is the habit to keep.
 node_modules/
+
+# Test reports written by the matrix demo (Day 3, file 26) before they are
+# uploaded as artifacts. Generated per run — never committed.
+reports/

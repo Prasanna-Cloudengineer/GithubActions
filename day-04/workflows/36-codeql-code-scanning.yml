@@ -63,16 +63,16 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
           # queries: security-extended   # opt into a broader, noisier query set
 
       # Compiled languages (Java, C++, Go) need their real build here, e.g.
-      #   - uses: github/codeql-action/autobuild@v3
+      #   - uses: github/codeql-action/autobuild@v4
       # JavaScript/TypeScript and Python need no build step at all.
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
         with:
           category: '/language:${{ matrix.language }}'

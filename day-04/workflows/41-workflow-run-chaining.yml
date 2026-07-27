@@ -59,7 +59,7 @@ jobs:
           echo "Head branch        : ${{ github.event.workflow_run.head_branch }}"
 
       # To pull artifacts the upstream run produced:
-      # - uses: actions/download-artifact@v4
+      # - uses: actions/download-artifact@v8
       #   with:
       #     run-id: ${{ github.event.workflow_run.id }}
       #     github-token: ${{ secrets.GITHUB_TOKEN }}
