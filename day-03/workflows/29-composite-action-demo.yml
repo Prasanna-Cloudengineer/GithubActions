@@ -1,5 +1,5 @@
 # 29 - USING a composite action
-# Pairs with day-02/actions/node-ci-setup/action.yml.
+# Pairs with day-03/actions/node-ci-setup/action.yml.
 #
 # 📋 SETUP — you must copy TWO things into your practice repo:
 #      .github/workflows/29-composite-action-demo.yml   (this file)
@@ -30,7 +30,7 @@
 #
 #   Rule of thumb: repeating STEPS -> composite action.
 #                  repeating a whole JOB -> reusable workflow.
-#                  need real logic/an API call -> JavaScript action (Day 3).
+#                  need real logic/an API call -> JavaScript action (covered later).
 
 name: 29 - Composite Action
 

@@ -1,4 +1,4 @@
-# 15 - HANDS-ON: Your first real CI pipeline (combines everything from Day 1)
+# 15 - HANDS-ON: Your first real CI pipeline (combines everything so far)
 #
 # This single workflow brings together:
 #   - multiple triggers (push, pull_request, manual)
@@ -23,7 +23,7 @@
 # Copy the WHOLE sample-app/ folder into your repo root, keep the name as-is,
 # and this pipeline runs green on the very first push.
 
-name: 15 - Node CI (Day 1 Capstone)
+name: 15 - Node CI (First CI Pipeline)
 
 on:
   push:

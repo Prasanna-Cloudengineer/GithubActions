@@ -1,0 +1,177 @@
+# 49 - 🚀 CAPSTONE: a fully hardened delivery pipeline
+#
+# The earlier pipeline capstone (file 34) proved the SHAPE of a pipeline. This one adds
+# every hardening lesson from this day on top, so it looks like something a
+# security-conscious team would actually run in production:
+#
+#   ✅ third-party actions PINNED TO SHA (35)     ✅ CodeQL code scanning (36)
+#   ✅ secret scanning gate (37)                  ✅ least-privilege permissions (30)
+#   ✅ Docker image BUILT & PUSHED to GHCR (44)   ✅ OIDC keyless cloud deploy (39)
+#   ✅ gated `production` environment (31)        ✅ build once, deploy same image
+#
+# 📋 SETUP (this is the advanced capstone — it expects real infrastructure):
+#   * A Dockerfile in sample-app/ (see file 44 / the README).
+#   * A `production` environment with a required reviewer (file 31).
+#   * For the deploy: an AWS IAM role trusting this repo's OIDC `sub` claim, its
+#     ARN in vars.AWS_ROLE_ARN (file 39). Remove the OIDC step to run without a
+#     cloud account.
+#   * SHAs below are EXAMPLES — pin to current ones (or let Dependabot do it).
+#
+# THE PIPELINE:
+#
+#   scan (CodeQL + secrets) ─┐
+#                            ├─> build+push image ─> deploy (OIDC, gated) ─> summary
+#   test ────────────────────┘
+#
+# WHAT TO OBSERVE: security scans and tests run first; the image is built and
+# pushed to GHCR exactly once; the deploy job waits on the production approval,
+# then authenticates to the cloud with a short-lived OIDC token — no stored
+# cloud key anywhere in the repo.
+
+name: 49 - Hardened Capstone
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Read-only by default; each job elevates only what it needs.
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # ── 1a. Static security analysis ─────────────────────────────────────────
+  codeql:
+    name: 🔬 CodeQL
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write            # publish findings
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8  # v5.0.0
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+      - uses: github/codeql-action/analyze@v3
+
+  # ── 1b. Secret scan (blocks a leak from shipping) ────────────────────────
+  secrets-scan:
+    name: 🔑 Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8  # v5.0.0
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ── 1c. Tests ────────────────────────────────────────────────────────────
+  test:
+    name: 🧪 Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: sample-app
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8  # v5.0.0
+      - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903  # v6.0.0
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'sample-app/package-lock.json'
+      - run: npm ci
+      - run: npm test
+
+  # ── 2. Build once and push the image to GHCR ─────────────────────────────
+  build-image:
+    name: 📦 Build & push image
+    needs: [codeql, secrets-scan, test]
+    # Never publish an image from a pull request.
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write                   # push to GHCR
+    outputs:
+      image: ${{ steps.meta.outputs.tags }}
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8  # v5.0.0
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha
+            type=raw,value=latest,enable={{is_default_branch}}
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./sample-app
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  # ── 3. Deploy: gated, and keyless via OIDC ───────────────────────────────
+  deploy:
+    name: 🛡️ Deploy (OIDC, gated)
+    needs: build-image
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write                   # 🔑 request the OIDC token
+    environment:
+      name: production                  # required reviewer pauses the run here
+      url: ${{ vars.API_URL || 'https://api.example.com' }}
+    steps:
+      - name: Authenticate to AWS via OIDC (no stored keys)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Deploy the exact image we built
+        run: |
+          echo "Pulling and deploying: ${{ needs.build-image.outputs.image }}"
+          aws sts get-caller-identity
+          echo "🎉 Deployed with short-lived credentials — nothing to leak."
+
+  # ── 4. Always report ─────────────────────────────────────────────────────
+  summary:
+    name: 📋 Summary
+    needs: [codeql, secrets-scan, test, build-image, deploy]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Write the run summary
+        run: |
+          {
+            echo "## Hardened pipeline result"
+            echo ""
+            echo "| Stage | Result |"
+            echo "|-------|--------|"
+            echo "| CodeQL | ${{ needs.codeql.result }} |"
+            echo "| Secret scan | ${{ needs.secrets-scan.result }} |"
+            echo "| Test | ${{ needs.test.result }} |"
+            echo "| Build & push | ${{ needs.build-image.result }} |"
+            echo "| Deploy | ${{ needs.deploy.result }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Fail if anything upstream failed
+        if: contains(needs.*.result, 'failure')
+        run: exit 1

@@ -9,7 +9,7 @@
 # compromised or careless third-party action running in your job inherits it
 # and can push commits, publish packages, or open pull requests as you. This
 # is not theoretical — it is the exact mechanism behind the supply-chain
-# attacks we dissect on Day 3.
+# attacks we dissect later in the series.
 #
 # THE FIX: declare the narrowest set of scopes the job actually needs.
 #

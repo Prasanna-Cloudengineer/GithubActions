@@ -101,9 +101,9 @@ Greens Technologys, Perumbakkam (https://maps.app.goo.gl/u34U3rXu8zPFfQh5A)
 2:04:00 actions/checkout — Why the Runner Doesn't Have Your Code
 2:14:00 actions/setup-node — Node Versions, Caching & Version Pinning
 2:22:00 Day 1 Cheat Sheet & Recap
-2:26:00 What's Next — Day 2 Preview
+2:26:00 What's Next — Coming Up in the Series
 
-⏭️ *Coming in Day 2:* environment variables and scopes, contexts and expressions, repository secrets, and the full hands-on capstone — a complete Node.js CI pipeline that checks out, installs, lints and tests on every push and pull request, plus multi-job pipelines, `needs`, matrix builds, caching and artifacts.
+⏭️ *Coming up next in the series:* environment variables and scopes, contexts and expressions, repository secrets, and the full hands-on capstone — a complete Node.js CI pipeline that checks out, installs, lints and tests on every push and pull request, plus multi-job pipelines, `needs`, matrix builds, caching and artifacts.
 
 👍 If this video helps you, like, subscribe, and turn on notifications for more hands-on content on GitHub Actions, DevOps, Azure, AWS, Linux, and Python.
 

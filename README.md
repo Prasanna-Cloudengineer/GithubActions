@@ -39,11 +39,45 @@ Everything is taught against the **current (2026) GitHub Actions platform** — 
 14. [`if` — conditional jobs and steps](#14--if--conditional-jobs-and-steps)
 15. [Status functions](#15--status-functions)
 
+**Day 3 — Production pipelines: reuse, security & gated deploys**
+
+16. [Job outputs — passing values between jobs](#16--job-outputs--passing-values-between-jobs)
+17. [Matrix builds — one job, many versions](#17--matrix-builds--one-job-many-versions)
+18. [Multi-dimension matrices: `include` & `exclude`](#18--multi-dimension-matrices-include--exclude)
+19. [Controlling a matrix: `fail-fast` & `max-parallel`](#19--controlling-a-matrix-fail-fast--max-parallel)
+20. [Caching dependencies](#20--caching-dependencies)
+21. [Artifacts — sharing files between jobs](#21--artifacts--sharing-files-between-jobs)
+22. [Matrix artifacts & merging](#22--matrix-artifacts--merging)
+23. [Reusable workflows — reuse a whole job](#23--reusable-workflows--reuse-a-whole-job)
+24. [Composite actions — reuse a few steps](#24--composite-actions--reuse-a-few-steps)
+25. [`GITHUB_TOKEN` & least-privilege `permissions`](#25--github_token--least-privilege-permissions)
+26. [Environments & approvals](#26--environments--approvals)
+27. [Concurrency — cancel stale runs, serialise deploys](#27--concurrency--cancel-stale-runs-serialise-deploys)
+28. [Timeouts & `continue-on-error`](#28--timeouts--continue-on-error)
+29. [🚀 The production pipeline (capstone)](#29---the-production-pipeline-capstone)
+
+**Day 4 — Advanced: security, OIDC, custom actions & publishing**
+
+30. [Supply-chain security: pin actions to a SHA](#30--supply-chain-security-pin-actions-to-a-sha)
+31. [CodeQL code scanning](#31--codeql-code-scanning)
+32. [Secret scanning & push protection](#32--secret-scanning--push-protection)
+33. [Untrusted PRs & `pull_request_target`](#33--untrusted-prs--pull_request_target)
+34. [OIDC: keyless cloud authentication](#34--oidc-keyless-cloud-authentication)
+35. [Self-hosted & scaled runners](#35--self-hosted--scaled-runners)
+36. [Chaining workflows: `workflow_run` & `repository_dispatch`](#36--chaining-workflows-workflow_run--repository_dispatch)
+37. [Monorepo change detection](#37--monorepo-change-detection)
+38. [Build & push a Docker image to GHCR](#38--build--push-a-docker-image-to-ghcr)
+39. [Custom JavaScript actions](#39--custom-javascript-actions)
+40. [Custom Docker container actions](#40--custom-docker-container-actions)
+41. [Publishing & versioning your own action](#41--publishing--versioning-your-own-action)
+42. [Debugging & running locally with `act`](#42--debugging--running-locally-with-act)
+43. [🚀 The hardened pipeline (capstone)](#43---the-hardened-pipeline-capstone)
+
 **Reference**
 
 - [Cheat sheet](#-cheat-sheet)
 - [Reference links](#-reference-links)
-- [Coming up next](#-coming-up-next)
+- [You've finished the course](#-youve-finished-the-course)
 
 ---
 
@@ -76,7 +110,7 @@ flowchart LR
 4. Scroll down → **Commit changes** (commit directly to `main` for practice).
 5. Click the **Actions** tab to watch it run.
 
-> 💡 **Where the files live in this repo:** the copy-paste YAML files are numbered in teaching order — Day 1 topics in [`day-01/workflows/`](day-01/workflows/) (`01`–`11`) and Day 2 topics in [`day-02/workflows/`](day-02/workflows/) (`12`–`19`). The sample app is in [`sample-app/`](sample-app/) at the repo root.
+> 💡 **Where the files live in this repo:** the copy-paste YAML files are numbered in teaching order and grouped into folders — files `01`–`11` in [`day-01/workflows/`](day-01/workflows/), `12`–`19` in [`day-02/workflows/`](day-02/workflows/), `20`–`34` in [`day-03/workflows/`](day-03/workflows/), and `35`–`49` in [`day-04/workflows/`](day-04/workflows/) (custom actions live in each day's `actions/` folder). The number is the teaching order — just follow them in sequence. The sample app is in [`sample-app/`](sample-app/) at the repo root.
 >
 > 📦 **Everything is prebuilt — nothing to generate.** Clone or download this repo and you get every workflow file plus a complete, ready-to-run sample app, `package-lock.json` included. There is no setup step, no `npm install` on your machine, and no lockfile to create. Copy, commit, watch it run.
 
@@ -596,6 +630,650 @@ flowchart TD
 
 ---
 
+# Day 3 — Production pipelines: reuse, security & gated deploys
+
+**Goal:** take the multi-job pipeline from the previous day and make it *production-grade* — pass data between jobs with **outputs**, test across a **matrix**, **cache** dependencies and share files with **artifacts (v4)**, stop copy-pasting YAML with **reusable workflows** and **composite actions**, lock down `GITHUB_TOKEN` with least-privilege **permissions**, gate deploys behind a **human approval** with environments, and control cost with **concurrency** and **timeouts** — ending in a full **build → test → deploy** capstone.
+
+The workflow files are in [`day-03/workflows/`](day-03/workflows/) (`20`–`34`), with the composite action in [`day-03/actions/`](day-03/actions/).
+
+## 16 — Job outputs — passing values between jobs
+
+### ▶️ [`20-job-outputs.yml`](day-03/workflows/20-job-outputs.yml)
+
+Every job runs on its own machine (section 12), so a variable you set in job A simply doesn't exist in job B. To move a small **value** — a version number, an image tag, a URL — you use **outputs**. (For a whole *file*, you'll use artifacts — section 21.)
+
+It's a **three-link chain**, and missing the middle link is the #1 mistake:
+
+```mermaid
+flowchart LR
+    S["1️⃣ Step writes<br/>echo 'k=v' >> $GITHUB_OUTPUT"] --> J["2️⃣ Job re-exports it<br/>outputs: { k: steps.id.outputs.k }"]
+    J --> D["3️⃣ Downstream job reads<br/>needs.job.outputs.k"]
+```
+
+```yaml
+jobs:
+  produce:
+    runs-on: ubuntu-latest
+    outputs:                                    # 2️⃣ promote step → job output
+      version: ${{ steps.meta.outputs.version }}
+    steps:
+      - id: meta                                # ← the id is mandatory
+        run: echo "version=1.4.${{ github.run_number }}" >> "$GITHUB_OUTPUT"   # 1️⃣
+  consume:
+    needs: produce                              # 3️⃣ no `needs` = no `needs.produce`
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "${{ needs.produce.outputs.version }}"
+```
+
+> ⚠️ **Facts that bite:** the producing step needs an `id:`. `::set-output::` is dead (disabled 2023) — use `$GITHUB_OUTPUT`. Every output is a **string** (`"true"` is not a boolean). A **secret** smuggled through an output arrives empty. **Multi-line** values need a random delimiter (`key<<EOF … EOF`) or they truncate.
+
+**What to observe:** `consume` prints the version that `produce` computed — and the gate step (`if: needs.produce.outputs.version != ''`) shows how you branch on an output.
+
+---
+
+## 17 — Matrix builds — one job, many versions
+
+### ▶️ [`21-matrix-basics.yml`](day-03/workflows/21-matrix-basics.yml)
+
+*"Does my code work on Node 20, 22 **and** 24?"* Without a matrix you'd copy-paste the job three times. `strategy.matrix` writes it **once** and GitHub expands it into one parallel job per value.
+
+```yaml
+strategy:
+  matrix:
+    node: [20, 22, 24]        # → 3 jobs, each with its own ${{ matrix.node }}
+```
+
+The matrix values become the `matrix` context — usable in `with:`, `run:`, `if:`, even the job `name:`.
+
+> 💡 **Always template the job `name:`** with the matrix values (`name: Test on Node ${{ matrix.node }}`). Otherwise the Actions tab shows three identical rows and you can't tell which one broke. **Limit:** 256 jobs per matrix.
+
+**What to observe:** three jobs, three different `node --version` outputs, all finishing at roughly the same time.
+
+---
+
+## 18 — Multi-dimension matrices: `include` & `exclude`
+
+### ▶️ [`22-matrix-multi-dimension.yml`](day-03/workflows/22-matrix-multi-dimension.yml)
+
+Two matrix keys **multiply** — a Cartesian product. `3 OSes × 3 Node versions = 9 jobs`, nine runners. macOS is billed at **10×** on private repos, so trimming the grid is a real cost decision.
+
+| Key | What it does |
+|---|---|
+| `exclude:` | Removes specific combinations from the grid. |
+| `include:` (matches an existing combo) | **Adds variables** to that job (no new job). |
+| `include:` (matches nothing) | **Appends a brand-new job** outside the grid. |
+
+> ⚠️ **Order:** `exclude` is applied **first**, then `include` — so `include` can add back something you just excluded. This asymmetry trips everyone up once.
+
+**What to observe:** count the jobs. `3×3 = 9`, minus 2 excluded = 7, plus 1 appended (`node: 18`, legacy) = **8**. Note `fail-fast: false` here so every row runs to completion.
+
+---
+
+## 19 — Controlling a matrix: `fail-fast` & `max-parallel`
+
+### ▶️ [`23-matrix-fail-fast-max-parallel.yml`](day-03/workflows/23-matrix-fail-fast-max-parallel.yml)
+
+| Setting | Default | What it does |
+|---|---|---|
+| `fail-fast` | `true` | The moment **one** matrix job fails, GitHub **cancels all the others**. Fast feedback, but you never learn if the other versions broke too. |
+| `max-parallel` | (all at once) | Caps how many matrix jobs run simultaneously — for a shared test DB, a rate-limited API, or a small runner pool. |
+
+**What to observe:** the `node: 18` row fails on purpose. With `fail-fast: false` all four rows finish and only 18 is red. Flip it to `true`, re-run, and watch the others get **cancelled mid-flight**. With `max-parallel: 2`, two rows sit in **Queued** until a slot frees up.
+
+---
+
+## 20 — Caching dependencies
+
+### ▶️ [`24-cache-dependencies.yml`](day-03/workflows/24-cache-dependencies.yml)
+
+Every job starts on a blank runner, so `npm ci` re-downloads the whole dependency tree **every run** — 60–180 seconds of pure waiting, forever. A **cache** saves a directory at the end of a run and restores it at the start of the next.
+
+Two ways, and you should reach for the first:
+
+```yaml
+# A — built-in (covers 90% of Node projects, zero key management)
+- uses: actions/setup-node@v6
+  with: { node-version: '20', cache: 'npm', cache-dependency-path: 'sample-app/package-lock.json' }
+
+# B — actions/cache@v4 (full control over any directory)
+- uses: actions/cache@v4
+  with:
+    path: ~/.my-tool-cache
+    key: ${{ runner.os }}-tools-${{ hashFiles('sample-app/package-lock.json') }}
+    restore-keys: |
+      ${{ runner.os }}-tools-
+```
+
+**How the key works — this is the whole concept:** `key` is an exact-match lookup. **Hit** → restore and skip the save. **Miss** → run the steps, then save under this key. `restore-keys` are prefixes tried only on a miss — a partial hit gives a slightly stale cache, still better than downloading everything.
+
+> ⚠️ **The classic bug:** a key like `npm-cache` with **no `hashFiles()`** is written once and then *never updates again*, no matter how much `package.json` changes — because caches are **immutable**. Always hash the lockfile into the key. Also: `cache-hit` is `'true'` only on an **exact** `key` match, not a `restore-keys` hit.
+>
+> **Cache vs artifact:** *cache* = "I could rebuild this, I just don't want to wait." *Artifact* (next) = "This **is** the result; losing it loses the work." **Limits:** 10 GB/repo (LRU eviction), 7-day idle deletion, and a branch can read its own + the default branch's caches, never a sibling's.
+
+**What to observe:** run it **twice**. First run: *"Cache not found"*, slow path. Second run: *"Cache restored from key…"*, slow step skipped.
+
+---
+
+## 21 — Artifacts — sharing files between jobs
+
+### ▶️ [`25-artifacts-basics.yml`](day-03/workflows/25-artifacts-basics.yml)
+
+Outputs move a string; **artifacts move real files** — a compiled bundle, a test report, a screenshot, a log. The flow is always the same two actions:
+
+```mermaid
+flowchart LR
+    B["build job<br/>upload-artifact@v4"] -->|"named bundle"| Store["GitHub storage"]
+    Store --> T["test job<br/>download-artifact@v4"]
+```
+
+```yaml
+- uses: actions/upload-artifact@v4
+  with:
+    name: app-build
+    path: sample-app/dist/       # ⚠️ ALWAYS relative to repo root — working-directory does NOT apply
+    if-no-files-found: error     # 'warn' (default) hides a broken build
+# ...in a later job:
+- uses: actions/download-artifact@v4
+  with: { name: app-build, path: downloaded-build }
+```
+
+> ⚠️ **Use v4.** The v3 artifact actions were **fully retired on 30 Jan 2025** — any workflow still calling them fails outright, so older tutorials are broken. v4 artifacts are **immutable** (a second upload to the same name **fails**), names must be **unique** per run, and each artifact is downloadable the moment its job finishes.
+
+**What to observe:** the run summary has an **Artifacts** box you can download in the browser. The `download-artifact` job proves the files crossed the machine boundary onto a fresh runner with no checkout. A third job uses `if: failure()` to rescue logs from a broken run — the real-world reason artifacts matter.
+
+---
+
+## 22 — Matrix artifacts & merging
+
+### ▶️ [`26-artifacts-matrix-and-merge.yml`](day-03/workflows/26-artifacts-matrix-and-merge.yml)
+
+Put an upload **inside a matrix** with a fixed `name:` and rows 2 and 3 fail:
+
+> `Conflict: an artifact with this name already exists on the workflow run`
+
+Because v4 names are immutable/unique, this is the **single most common migration breakage**. The fix has two halves:
+
+1. **Upload under a unique name per row** — include every matrix dimension: `name: report-node-${{ matrix.node }}` (a 2-D grid needs `report-${{ matrix.os }}-${{ matrix.node }}`).
+2. **Optionally merge** them back:
+
+| Method | Result | Best when |
+|---|---|---|
+| `actions/upload-artifact/merge@v4` (with `pattern:`) | A new combined artifact in the UI | A human downloads one zip |
+| `download-artifact` + `pattern:` + `merge-multiple: true` | All files onto one runner | A later **job** processes them |
+
+**What to observe:** the run lists `report-node-20/22/24`, then a single `all-test-reports` after the merge. The summarise job writes a table to `$GITHUB_STEP_SUMMARY` — an underused way to surface results without opening logs.
+
+---
+
+## 23 — Reusable workflows — reuse a whole job
+
+### ▶️ callee [`27-reusable-workflow-callee.yml`](day-03/workflows/27-reusable-workflow-callee.yml) · caller [`28-reusable-workflow-caller.yml`](day-03/workflows/28-reusable-workflow-caller.yml)
+
+Copy-pasting the same "checkout, setup-node, install, test" into eight repos is how CI rots. Write it **once** and call it like a function. The `workflow_call` trigger is what makes a workflow callable, with a **typed interface**:
+
+```yaml
+# callee (27) — the reusable workflow
+on:
+  workflow_call:
+    inputs:
+      node-version: { type: string, required: false, default: '20' }   # `type` is MANDATORY here
+      run-lint:     { type: boolean, required: false, default: true }   # a real boolean
+    secrets:
+      API_KEY: { required: false }        # declared explicitly — nothing leaks in
+    outputs:
+      tested-version: { value: ${{ jobs.run-tests.outputs.node-version }} }
+```
+
+You call it **from the job level** — not from a step:
+
+```yaml
+# caller (28)
+jobs:
+  test-node-22:
+    uses: ./.github/workflows/27-reusable-workflow-callee.yml   # job-level `uses:`
+    with: { node-version: '22', run-lint: false }
+    secrets: { API_KEY: ${{ secrets.MY_API_KEY }} }             # or `secrets: inherit` (over-shares)
+```
+
+> ⚠️ **The shape that surprises everyone:** a job with `uses:` must **not** have `steps:` or `runs-on:` — the called workflow brings its own. The only keys allowed alongside it: `with`, `secrets`, `needs`, `if`, `permissions`, `strategy`, `concurrency`. Because `strategy` is allowed, you can **matrix a reusable-workflow call**. **Rules:** it must live in `.github/workflows/` (no subfolders), nesting caps at 4, and caller `env` does **not** reach the callee — pass it as an input.
+
+**📋 To run the demo:** copy **both** 27 and 28 into `.github/workflows/`.
+
+**What to observe:** the run graph shows the caller's jobs with the **callee's jobs nested inside**. The `report` job reads the callee's output via `needs.test-defaults.outputs.tested-version`.
+
+---
+
+## 24 — Composite actions — reuse a few steps
+
+### ▶️ [`29-composite-action-demo.yml`](day-03/workflows/29-composite-action-demo.yml) + [`action.yml`](day-03/actions/node-ci-setup/action.yml)
+
+A **composite action** collapses several repeated *steps* into one. Compare the two jobs in the demo: `the-long-way` spells out three steps; `the-short-way` does the same in one `uses:`.
+
+```yaml
+# .github/actions/node-ci-setup/action.yml
+runs:
+  using: composite               # ← this is what makes it composite (not node20)
+  steps:
+    - uses: actions/setup-node@v6
+      with: { node-version: ${{ inputs.node-version }}, cache: 'npm', cache-dependency-path: ${{ inputs.working-directory }}/package-lock.json }
+    - shell: bash                 # ← MANDATORY on every run step, no default
+      run: npm ci
+```
+
+```yaml
+# in the caller — checkout FIRST, then the local action
+- uses: actions/checkout@v5
+- uses: ./.github/actions/node-ci-setup     # a PATH, no @version
+  with: { node-version: '22' }
+```
+
+> ⚠️ **The chicken-and-egg rule:** a local action (`uses: ./…`) is just a file in your repo, so it doesn't exist on the runner until `actions/checkout` has run. Forget it and you get *"Can't find 'action.yml' under …"*. Also: every `run:` step needs `shell:`, and there's **no `secrets` context** — pass secrets as inputs.
+
+**When to use which — the exam question:**
+
+| | Composite action | Reusable workflow |
+|---|---|---|
+| Unit of reuse | a few **steps** | whole **jobs** |
+| Called from | a **step** (`uses:`) | a **job** (`uses:`) |
+| Picks the runner? | no — inherits | yes — brings its own |
+| Own `permissions` / matrix? | no | yes |
+| Lives in | any folder | `.github/workflows/` only |
+| Sees `secrets`? | no (pass inputs) | yes (declared) |
+
+Rule of thumb: repeating **steps** → composite action; repeating a whole **job** → reusable workflow; need real logic/an API call → a JavaScript action (later in the series).
+
+**📋 To run the demo:** copy this file **and** `.github/actions/node-ci-setup/action.yml` into your repo.
+
+---
+
+## 25 — `GITHUB_TOKEN` & least-privilege `permissions`
+
+### ▶️ [`30-token-permissions.yml`](day-03/workflows/30-token-permissions.yml)
+
+Every run gets a token it never asked for: GitHub mints a fresh `GITHUB_TOKEN`, injects it as `secrets.GITHUB_TOKEN`, and destroys it when the run ends. It lets you call the GitHub API **as the repo** — no personal token needed. The risk: by default it may be allowed to **write**, and a compromised third-party action in your job inherits it — the exact mechanism behind the supply-chain attacks covered later in the series.
+
+```yaml
+permissions:            # at the TOP of every workflow you write from now on
+  contents: read        # read the repo…
+  # …and nothing else
+```
+
+> 🔑 **The rule that makes this safe:** specifying `permissions:` **at all** sets every scope you *didn't* list to `none` — it is **not additive**. So a two-line block is already least-privilege; you never enumerate the other 15 scopes.
+
+| Shortcut | Meaning |
+|---|---|
+| `permissions: read-all` | every scope read (fine for most CI) |
+| `permissions: write-all` | every scope write (avoid) |
+| `permissions: {}` | nothing at all (pure compute jobs) |
+
+Put it at workflow level (all jobs) or per job (overrides the workflow). **Best practice:** read-only at the top, then elevate the one job that must write.
+
+**What to observe:** expand **"Set up job"** in each job's log — GitHub prints the exact scopes granted. The `zero-permissions` job proves the restriction by attempting a **write** (creating an issue) and getting a clean **403** — a write is denied unambiguously, whereas a public-repo read would succeed even with no scopes.
+
+---
+
+## 26 — Environments & approvals
+
+### ▶️ [`31-environments-and-approvals.yml`](day-03/workflows/31-environments-and-approvals.yml)
+
+An **environment** is a named deployment target — `staging`, `production` — that gives a job three things a plain job lacks: its own **scoped secrets/variables**, **protection rules** (required approvals, wait timers, branch policies), and **deployment history**.
+
+```yaml
+deploy-production:
+  needs: deploy-staging
+  environment:
+    name: production          # ← the required reviewer on this env IS the gate
+    url: ${{ vars.API_URL }}  # renders as a clickable link on the run page
+  steps:
+    - env: { DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }} }   # resolves to the PRODUCTION value
+      run: echo "deploying…"
+```
+
+> 🔑 **Secret precedence — most specific wins:** `environment > repository > organization`. Both environments define `DEPLOY_TOKEN` under the **same name**; the job that says `environment: staging` transparently gets the staging value. One workflow, one secret name, different values per target — **no `if` picking secret names**.
+
+**📋 Setup (Settings → Environments):** create `staging` and `production`, each with a `DEPLOY_TOKEN` secret and an `API_URL` variable; on `production` add **yourself as a required reviewer**, and optionally a wait timer + a `main`-only branch policy.
+
+**What to observe:** the run **pauses** at `deploy-production` with a yellow "Waiting" badge and a **Review deployments** button — nothing runs until you click Approve. The `environment:` key *is* the entire gate; there's no approval step to write. Branch policies are enforced by GitHub, not your `if:` — so they can't be bypassed by editing the workflow.
+
+---
+
+## 27 — Concurrency — cancel stale runs, serialise deploys
+
+### ▶️ [`32-concurrency.yml`](day-03/workflows/32-concurrency.yml)
+
+`concurrency` solves two problems that pull in opposite directions. Every run joins a named **group**; only one run per group executes at a time.
+
+| Problem | Setting |
+|---|---|
+| **Waste** — three pushes to a PR start three CI runs; the first two are already stale. Kill them. | `cancel-in-progress: true` |
+| **Race conditions** — two merges to main trigger two deploys fighting over one server. Queue them. | `cancel-in-progress: false` |
+
+```yaml
+# Standard "cancel stale CI" — per workflow, per branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+```
+
+**Choosing the group key is the whole design decision:** include `github.ref` for CI (one run per branch); **leave it out** for deploys (`group: production-deploy`) so *all* deploys serialise. You can even compute the flag: `cancel-in-progress: ${{ github.event_name == 'pull_request' }}` cancels stale PR builds but lets main finish.
+
+> ⚠️ **The queue is one deep:** per group there's one running + one pending. Queue a third and it **replaces** the pending one. Concurrency is not a durable job queue — don't use it as one.
+
+**What to observe:** run it from the button, then immediately run it again — the first run flips to **Cancelled** the moment the second starts.
+
+---
+
+## 28 — Timeouts & `continue-on-error`
+
+### ▶️ [`33-timeout-and-continue-on-error.yml`](day-03/workflows/33-timeout-and-continue-on-error.yml)
+
+A job's **default timeout is 360 minutes** — six hours. A hung test or a command waiting on input will happily burn all six hours of billed time. `timeout-minutes` is the cheapest insurance in CI — set it to ~2–3× normal runtime.
+
+```yaml
+jobs:
+  build:
+    timeout-minutes: 5        # ← put this on EVERY job (cancels the whole job)
+    steps:
+      - timeout-minutes: 1    # on a STEP: cancels just that step, fails the job
+        run: ./maybe-hangs.sh
+```
+
+`continue-on-error` marks a step (or job) as *"may fail, don't fail the run over it"* — for genuinely optional work (a flaky coverage upload, an experimental matrix row). **Don't** use it to silence a failing test; that's how a green pipeline stops meaning anything.
+
+> 🔑 **`outcome` vs `conclusion` — the distinction that makes it usable:** `steps.<id>.outcome` = what **actually** happened (`failure`); `steps.<id>.conclusion` = what was **reported** after `continue-on-error` (`success`). To react to a real failure, check **`outcome`** — checking `conclusion` silently never matches, and people lose an afternoon to it.
+
+**What to observe:** the job goes **green overall**, but the hung step shows a red-with-arrow icon and is cancelled at 1 minute; the optional-upload job reads `outcome == 'failure'` to log without blocking. The experimental Node 23 matrix row fails without turning the run red (`continue-on-error: ${{ matrix.experimental }}`).
+
+---
+
+## 29 — 🚀 The production pipeline (capstone)
+
+### ▶️ [`34-pipeline-capstone.yml`](day-03/workflows/34-pipeline-capstone.yml)
+
+Everything from this day in one file a real team would ship:
+
+```mermaid
+flowchart LR
+    L["🔍 lint"] --> B["📦 build"]
+    T["🧪 test<br/>(matrix via reusable wf)"] --> B
+    B --> S["🚀 deploy-staging<br/>(automatic)"]
+    S --> P["🛡️ deploy-production<br/>(needs approval)"]
+    P --> Sum["📋 summary<br/>always()"]
+```
+
+It combines least-privilege `permissions`, PR-only `concurrency` cancellation, a `lint` + matrix `test` (delegated to the reusable workflow from section 23) fanning into a single `build`, job **outputs** for the version, an **artifact** built **once** and deployed to both environments, automatic **staging** + gated **production**, and a `summary` job that runs on `always()`.
+
+> 🔑 **Two production instincts baked in:** ① **build once, deploy the same bytes** everywhere — staging and production download the *same* `app-build-${version}` artifact, killing the "it worked in staging" class of bug. ② `always()` makes `summary` run whatever happened, so it re-checks `contains(needs.*.result, 'failure')` and **exits 1** — otherwise the run could look green even when `build` failed.
+
+**📋 Setup:** copy `sample-app/`, this file, and `27-reusable-workflow-callee.yml` into your repo; create the `staging`/`production` environments (required reviewer on `production`) from section 26.
+
+**What to observe:** `lint` and `test` start together; `build` waits for both; staging deploys automatically; **production sits on "Waiting"** until you Approve; `summary` reports a table to the run summary page whatever the outcome.
+
+---
+
+# Day 4 — Advanced: security, OIDC, custom actions & publishing
+
+**Goal:** harden and scale the pipeline the way production teams do — pin the supply chain, scan code and secrets, authenticate to the cloud with **no stored keys** via OIDC, build your **own actions** (JavaScript and Docker), publish a **Docker image to GHCR**, and version and ship an action — ending in a fully hardened capstone.
+
+The workflow files are in [`day-04/workflows/`](day-04/workflows/) (`35`–`49`), with the custom actions in [`day-04/actions/`](day-04/actions/).
+
+## 30 — Supply-chain security: pin actions to a SHA
+
+### ▶️ [`35-sha-pinning.yml`](day-04/workflows/35-sha-pinning.yml)
+
+`uses: some/action@v1` trusts a **tag**, and a tag is a *movable pointer* — whoever controls the action's repo can silently re-point `v1` at new code that runs with your secrets and `GITHUB_TOKEN`.
+
+> ⚠️ **This is how CI gets compromised.** In March 2025 the popular `tj-actions/changed-files` action was hijacked: its version tags were moved to a malicious commit that dumped CI secrets into build logs. Repos pinned to a **tag** leaked; repos pinned to a full **SHA** were untouched.
+
+```yaml
+- uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8  # v5.0.0
+#                        └─ immutable 40-char commit ─┘             └ human note
+```
+
+A SHA names one exact commit that can never be swapped. Keep the tag as a trailing comment for humans (GitHub ignores it). **"But then I never get updates"** — that's what **Dependabot** is for: a `.github/dependabot.yml` with `package-ecosystem: "github-actions"` opens a PR that bumps the SHA *and* the comment on each new release, so updates stay deliberate.
+
+> 💡 **How much to pin:** third-party actions → **always SHA**; GitHub's own `actions/*` → a major tag is widely accepted; your own `./.github/...` → nothing to pin (already runs at the current commit). Org/enterprise admins can enforce *"require SHA-pinned actions,"* and **immutable releases** make a tag and SHA equivalent.
+
+---
+
+## 31 — CodeQL code scanning
+
+### ▶️ [`36-codeql-code-scanning.yml`](day-04/workflows/36-codeql-code-scanning.yml)
+
+CodeQL is GitHub's static-analysis engine. It compiles your code into a database and runs security queries (injection, path traversal, hard-coded secrets…), posting findings to the repo's **Security → Code scanning** tab, annotated on the exact line and on PRs.
+
+```mermaid
+flowchart LR
+    I["init<br/>(languages)"] --> B["build<br/>(compiled langs only)"] --> A["analyze<br/>(query + upload SARIF)"]
+    A --> Tab["🛡️ Security tab<br/>Code scanning alerts"]
+```
+
+The three steps are always `codeql-action/init` → (build) → `codeql-action/analyze`, matrixed by language. Scan on push/PR **and** on a schedule so newly-published queries re-check old code.
+
+> 🔑 **The permission:** `security-events: write` (to upload results) — miss it and you get *"Resource not accessible by integration."* Free on public repos; needs GitHub Advanced Security on private ones. JS/Python need no build step; compiled languages need `autobuild` or a real build.
+
+---
+
+## 32 — Secret scanning & push protection
+
+### ▶️ [`37-secret-scanning.yml`](day-04/workflows/37-secret-scanning.yml)
+
+Two layers stop credentials reaching the repo:
+
+| Layer | What it does | Where |
+|---|---|---|
+| **Platform secret scanning + push protection** | Detects known token formats; **push protection blocks the `git push`** before a recognised secret lands | a repo **setting** (no YAML) |
+| **A scanner in CI** (here `gitleaks`) | Also catches generic high-entropy strings, private keys, `.env` files, and **fails the build** so a leak can't merge | this workflow |
+
+> ⚠️ **If a secret was ever committed, rotate it.** Deleting the file does nothing — it lives forever in git history, clones, and forks. Treat any committed credential as burned: revoke and reissue. Use `fetch-depth: 0` so the scanner sees the full history, not just the tip.
+
+---
+
+## 33 — Untrusted PRs & `pull_request_target`
+
+### ▶️ [`38-untrusted-pr-hardening.yml`](day-04/workflows/38-untrusted-pr-hardening.yml)
+
+The single most dangerous Actions misconfiguration lives in the difference between two triggers:
+
+| Trigger | Runs code from | Secrets / token | Use for |
+|---|---|---|---|
+| `pull_request` | the **PR** (fork) | none / read-only on forks | safely building untrusted PRs |
+| `pull_request_target` | the **base** branch | **full secrets + write** | tasks needing secrets on fork PRs (labelling) |
+
+> ⚠️ **Poisoned pipeline execution:** a `pull_request_target` workflow that **checks out and runs the PR's code** (`npm ci`, tests, a `postinstall` script) is executing a stranger's code *with your secrets in the environment*. The attacker just edits a script to exfiltrate `${{ secrets.* }}`.
+
+The rules: prefer plain `pull_request`; with `pull_request_target` **never run the PR's code** in the job that holds secrets; never inline untrusted text (PR title/branch) into a `run:` — pass it through `env:` so the shell treats it as data, not code; keep `permissions` least-privilege; require approval for first-time contributors.
+
+---
+
+## 34 — OIDC: keyless cloud authentication
+
+### ▶️ [`39-oidc-cloud-auth.yml`](day-04/workflows/39-oidc-cloud-auth.yml)
+
+Storing a long-lived AWS/GCP/Azure key in repo secrets means one leak = standing cloud access until someone rotates it. **OIDC** removes the stored key entirely: GitHub mints a short-lived, signed token at runtime that *proves* "this is repo X on branch Z"; your cloud trusts GitHub's issuer and swaps that proof for credentials that expire in minutes.
+
+```mermaid
+flowchart LR
+    R["GitHub run"] -->|"1. request token"| P["GitHub OIDC provider"]
+    R -->|"2. present token + assume role"| C["AWS STS / GCP / Azure"]
+    C -->|"3. verify sub claim → short-lived creds"| R
+```
+
+```yaml
+permissions:
+  id-token: write          # 🔑 the line that makes OIDC possible
+# ...
+- uses: aws-actions/configure-aws-credentials@v4
+  with:
+    role-to-assume: ${{ vars.AWS_ROLE_ARN }}   # a variable, not a secret
+    aws-region: us-east-1
+```
+
+> 🔑 **Scope trust with the `sub` claim.** On the cloud side, don't trust "any GitHub repo" — trust `repo:my-org/my-repo:ref:refs/heads/main` or `:environment:production`. That's what stops a token from a random branch or fork assuming your prod role. Same `id-token: write` for every cloud; only the login action differs (`azure/login`, `google-github-actions/auth`).
+
+---
+
+## 35 — Self-hosted & scaled runners
+
+### ▶️ [`40-self-hosted-runners.yml`](day-04/workflows/40-self-hosted-runners.yml)
+
+Reach for a self-hosted runner — a machine **you** register — only when hosted ones can't do the job: special hardware (GPU/ARM), private-network access, licensed tooling, or very high volume. Target it by **label**: `runs-on: [self-hosted, linux, x64]`.
+
+> ⚠️ **Never attach a self-hosted runner to a public repo** — anyone's PR would run their code on your machine, inside your network. And unlike hosted runners (destroyed after each job), self-hosted ones **persist**: state and malware survive between runs unless you clean up or run each job in a fresh container. Scale with **runner groups** and ephemeral auto-scaling (Actions Runner Controller / runner scale sets), which restore the clean-machine-every-time property.
+
+**What to observe:** the demo sits in **Queued** forever unless a matching runner is online — that wait *is* the `runs-on` label-matching lesson.
+
+---
+
+## 36 — Chaining workflows: `workflow_run` & `repository_dispatch`
+
+### ▶️ [`41-workflow-run-chaining.yml`](day-04/workflows/41-workflow-run-chaining.yml) · [`42-repository-dispatch.yml`](day-04/workflows/42-repository-dispatch.yml)
+
+`needs` orders jobs *inside* one workflow. These two order things *across* workflows and *across systems*:
+
+- **`workflow_run`** — run workflow B when workflow A completes. It matches A by its **`name:`** (not filename), fires on **every** completion (gate with `if: github.event.workflow_run.conclusion == 'success'`), and runs from the **default branch** with a token that can write — so treat upstream data as untrusted.
+- **`repository_dispatch`** — start a workflow from **outside GitHub** via an API `POST` to `/dispatches` with an `event_type` and a JSON `client_payload`. It's the machine-to-machine cousin of the manual `workflow_dispatch` button — for webhooks, dashboards, and cross-repo triggers.
+
+```yaml
+# repository_dispatch — fired by: curl -X POST .../dispatches -d '{"event_type":"deploy-request", ...}'
+on:
+  repository_dispatch:
+    types: [deploy-request]
+# read the payload via ${{ github.event.client_payload.* }} — through env:, it's untrusted
+```
+
+---
+
+## 37 — Monorepo change detection
+
+### ▶️ [`43-monorepo-path-filters.yml`](day-04/workflows/43-monorepo-path-filters.yml)
+
+In a monorepo you don't rebuild everything on every push. Two levels: workflow-level `paths:` (all-or-nothing, seen earlier), and **per-path detection inside one workflow** — a first job diffs the changed files with `dorny/paths-filter` and sets a boolean **output** per component; later jobs gate on it with `if:`.
+
+```yaml
+build-app:
+  needs: changes
+  if: needs.changes.outputs.app == 'true'   # only if sample-app/** changed
+```
+
+> ⚠️ A skipped `if:` job counts as **success** for anything that `needs` it — so a required-but-skipped check can block branch-protection merges. The fix is a final `all-green` aggregation job (in the file) that fails only if a job that *actually ran* failed.
+
+---
+
+## 38 — Build & push a Docker image to GHCR
+
+### ▶️ [`44-docker-build-push-ghcr.yml`](day-04/workflows/44-docker-build-push-ghcr.yml)
+
+**GHCR** (`ghcr.io`) is GitHub's built-in container registry — publish an image with no external account, authenticating with the automatic `GITHUB_TOKEN`. Three actions do the work:
+
+```mermaid
+flowchart LR
+    L["docker/login-action<br/>→ ghcr.io"] --> M["docker/metadata-action<br/>→ smart tags"] --> B["docker/build-push-action<br/>→ build + push + cache"]
+```
+
+> 🔑 **The permission:** `packages: write` (GHCR is a "package"). `metadata-action` turns a `v1.2.3` tag into `1.2.3`, `1.2`, `1`, `latest` and every push into a `sha-…` tag, so you never hand-write tags. Add `id-token: write` for signed build provenance. The image appears under the repo's **Packages**, pullable with `docker pull ghcr.io/OWNER/REPO:latest`.
+
+---
+
+## 39 — Custom JavaScript actions
+
+### ▶️ [`45-javascript-action-demo.yml`](day-04/workflows/45-javascript-action-demo.yml) + [`action.yml`](day-04/actions/greet-js/action.yml) / [`index.js`](day-04/actions/greet-js/index.js)
+
+When you need **real logic** (parse JSON, call an API, control flow) — beyond what a composite action's shell can do — you write a **JavaScript action**. It runs directly on the runner (no container, instant start), on any OS.
+
+```yaml
+runs:
+  using: 'node20'      # a Node runtime, NOT composite
+  main: 'index.js'
+```
+
+Under the hood, each `with:` input arrives as an env var `INPUT_<NAME>`, and you set outputs by appending to `$GITHUB_OUTPUT` — exactly like a `run:` step. The official `@actions/core` toolkit wraps both; our demo uses only Node built-ins so there's nothing to install.
+
+> ⚠️ **Production caveat:** a real JS action's dependencies must be **committed** (the runner never runs `npm install`) — teams bundle everything into one file with `@vercel/ncc` and commit `dist/index.js`.
+
+---
+
+## 40 — Custom Docker container actions
+
+### ▶️ [`46-docker-action-demo.yml`](day-04/workflows/46-docker-action-demo.yml) + [`action.yml`](day-04/actions/greet-docker/action.yml) / [`Dockerfile`](day-04/actions/greet-docker/Dockerfile)
+
+When your tool isn't JavaScript or needs specific system packages, a **Docker container action** lets you control the entire environment.
+
+| | JavaScript action | Docker action |
+|---|---|---|
+| Speed | fast (no image) | slower (builds/pulls first) |
+| OS | Linux/Windows/macOS | **Linux only** |
+| Environment | whatever Node has | **anything** you put in the image |
+
+```yaml
+runs:
+  using: 'docker'
+  image: 'Dockerfile'          # or docker://ghcr.io/owner/img:tag (prebuilt, faster)
+  args: ['${{ inputs.who }}']  # forwarded to the entrypoint
+```
+
+Inputs arrive as `INPUT_<NAME>` env vars; outputs go to `$GITHUB_OUTPUT`, which GitHub bind-mounts into the container.
+
+---
+
+## 41 — Publishing & versioning your own action
+
+### ▶️ [`47-publish-custom-action.yml`](day-04/workflows/47-publish-custom-action.yml)
+
+Once an action lives in its own repo, others consume it as `uses: your-org/action@SOMETHING`. The convention everyone follows:
+
+- Cut a real **semver** release for each version: `v1.0.0`, `v1.1.0`, `v2.0.0`.
+- **Also** keep a **moving major tag** `v1` that always points at the latest `v1.x`.
+
+```yaml
+@v1        → auto non-breaking v1.x updates   (most consumers)
+@v1.2.3    → exact, never moves
+@<sha>     → maximum security pin             (§30)
+```
+
+> 🔑 **The moving-tag trick:** after publishing `v1.4.0`, force-move `v1` to that commit (`git tag -f v1 v1.4.0 && git push --force origin v1`) — the whole maintenance job, automated by the release workflow. Publishing to the **Marketplace** is a manual step: draft a release and tick *"Publish this Action to the Marketplace"* (needs a root `action.yml` with `name`, `description`, `branding`).
+
+---
+
+## 42 — Debugging & running locally with `act`
+
+### ▶️ [`48-debugging-and-act.yml`](day-04/workflows/48-debugging-and-act.yml)
+
+Four tools, cheapest first:
+
+1. **Re-run with debug logging** (a checkbox on "Re-run jobs"), or set repo secrets `ACTIONS_STEP_DEBUG` / `ACTIONS_RUNNER_DEBUG` = `true` for persistent verbose logs.
+2. **Print your own** `echo "::debug::msg"` (hidden unless debug is on) and dump contexts with `toJSON(...)`.
+3. **SSH into the live runner** with `mxschmitt/action-tmate` (gate it behind a manual input — it's a security risk).
+4. **Run locally with [`act`](https://github.com/nektos/act)** — executes workflows in Docker on your machine, skipping the commit-push-wait loop. Not a perfect replica, so always confirm on GitHub.
+
+**What to observe:** the `::debug::` line is hidden on a normal run and appears once debug logging is enabled.
+
+---
+
+## 43 — 🚀 The hardened pipeline (capstone)
+
+### ▶️ [`49-hardened-capstone.yml`](day-04/workflows/49-hardened-capstone.yml)
+
+Every lesson from this day layered onto the earlier pipeline shape:
+
+```mermaid
+flowchart LR
+    Q["🔬 CodeQL"] --> B["📦 build & push<br/>image → GHCR"]
+    S["🔑 secret scan"] --> B
+    T["🧪 test"] --> B
+    B --> D["🛡️ deploy<br/>(OIDC, gated)"]
+    D --> Sum["📋 summary<br/>always()"]
+```
+
+SHA-pinned actions, least-privilege `permissions`, CodeQL + secret-scan gates, a Docker image **built once and pushed to GHCR**, and a `production`-gated deploy that authenticates via **OIDC with no stored cloud key**.
+
+> 🔑 It's the union of the whole course: least privilege (§25), environments/approval (§26), build-once/deploy-same-artifact (§29), SHA pinning (§30), scanning (§31–32), GHCR (§38), and keyless OIDC (§34) — the shape a security-conscious team actually ships.
+
+**📋 Setup:** a `Dockerfile` in `sample-app/`, the `production` environment with a required reviewer, and (for the deploy) an AWS role trusting this repo's OIDC `sub` claim in `vars.AWS_ROLE_ARN`. Remove the OIDC step to run without a cloud account.
+
+---
+
 ## 🧾 Cheat sheet
 
 ```yaml
@@ -661,6 +1339,25 @@ jobs:                        # WHAT runs (parallel by default)
 | Run a job only on main | `if: github.ref == 'refs/heads/main'` |
 | Run cleanup even on failure | `if: always()` |
 | Alert only on failure | `if: failure()` |
+| Pass a value between jobs | Job `outputs:` + `${{ needs.job.outputs.x }}` |
+| Test many versions/OSes | `strategy: { matrix: { node: [20, 22, 24] } }` |
+| Keep all matrix rows running | `strategy: { fail-fast: false }` |
+| Speed up installs | `cache: 'npm'` on setup-node, or `actions/cache@v4` |
+| Share a file between jobs | `upload-artifact@v4` → `download-artifact@v4` |
+| Reuse a whole job | `uses: ./.github/workflows/x.yml` (job level) |
+| Reuse a few steps | Composite action + `uses: ./.github/actions/x` |
+| Lock down the token | `permissions: { contents: read }` |
+| Require approval before deploy | `environment: production` (with a required reviewer) |
+| Cancel stale runs | `concurrency:` + `cancel-in-progress: true` |
+| Cap a job's runtime | `timeout-minutes: 10` |
+| Let an optional step fail | `continue-on-error: true` (check `.outcome`) |
+| Pin an action safely | `uses: owner/action@<full-sha>  # v1.2.3` |
+| Scan code for vulns | `github/codeql-action/init` + `analyze` (`security-events: write`) |
+| Deploy without stored keys | `permissions: { id-token: write }` + cloud login action (OIDC) |
+| Publish an image to GHCR | `docker/login-action` + `build-push-action` (`packages: write`) |
+| Reuse real logic | JS action (`using: node20`) or Docker action (`using: docker`) |
+| Version your action | semver tag `v1.2.3` + moving major tag `v1` |
+| Trigger from outside GitHub | `on: repository_dispatch` (API `POST /dispatches`) |
 
 ---
 
@@ -690,15 +1387,15 @@ jobs:                        # WHAT runs (parallel by default)
 
 ---
 
-## ⏭️ Coming up next
+## 🎓 You've finished the course
 
-With a multi-job pipeline in hand, the series continues into real pipeline engineering:
+From *"I've never written a line of YAML"* to a **hardened, gated, keyless CI/CD pipeline** — that's the whole journey:
 
-- **Job outputs** — passing values (a version, a tag) between jobs with `$GITHUB_OUTPUT`
-- **Matrix builds** — test across many Node versions and OSes at once
-- **Caching** dependencies and sharing files between jobs with **artifacts (v4)**
-- **Reusable workflows** and **composite actions** — stop copy-pasting YAML
-- **`GITHUB_TOKEN` permissions**, **environments** with approval gates, and **concurrency** control
-- **Security hardening** — SHA-pinning, OIDC keyless cloud auth, and publishing your own actions
+- **Foundations** — YAML, workflow anatomy, triggers, runners, `run`/`uses`, Marketplace actions
+- **The workflow language** — variables, contexts, secrets, and your first full CI pipeline
+- **Real pipelines** — `needs`, `if`, matrix, caching, artifacts, reusable workflows, composite actions, permissions, environments, concurrency
+- **Advanced** — SHA pinning, CodeQL & secret scanning, OIDC keyless cloud auth, custom JavaScript/Docker actions, GHCR, and publishing your own action
 
-The prebuilt workflow files for these topics are already in [`day-02/workflows/`](day-02/workflows/) (`20`–`34`) and [`day-02/actions/`](day-02/actions/) if you want to read ahead. See you in the next video! 🚀
+**Where to go from here:** build the [`49-hardened-capstone.yml`](day-04/workflows/49-hardened-capstone.yml) against your own project, wire OIDC to your real cloud account, publish an action you actually use, and turn on branch protection so every merge runs through the pipeline. The master blueprint is in [`COURSE_OUTLINE.md`](COURSE_OUTLINE.md).
+
+Thanks for building along. If the series helped you, a like and subscribe on **LearnWithMithran** means a lot. 🚀

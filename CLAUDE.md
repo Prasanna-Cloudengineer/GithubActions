@@ -6,14 +6,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 _Keep this block updated when finishing a chunk of work — it's the first thing a new session (or the same author on another machine) should read._
 
-- **Done:** Day 1 (README §1–7, workflows `01`–`11`) recorded. Day 2 (README §8–15, workflows `12`–`19`, through status functions) written and being recorded.
-- **Next:** write the **Day 3 teaching content** — add the Day 3 sections to the root [README.md](README.md) covering workflows `20`–`34` (job outputs → matrix → caching → artifacts v4 → reusable workflows & composite action → `permissions` → environments/approvals → concurrency → timeouts → capstone). **Those workflow files already exist** in [day-02/workflows/](day-02/workflows/) and [day-02/actions/](day-02/actions/); they just need the narration written around them, then a `youtube/day03_youtube.md`.
-- **Note:** files `20`–`34` live under `day-02/workflows/` even though they're Day 3 content — that's intentional (see the numbering rule below). Don't move them.
+- **Done:** All four days' teaching content + workflow files are written. Day 1 (README §1–7, workflows `01`–`11`) recorded; Day 2 (§8–15, `12`–`19`) being recorded; Day 3 (§16–29, `20`–`34`) and **Day 4 (§30–43, `35`–`49` + [day-04/actions/](day-04/actions/): a JS action `greet-js` and a Docker action `greet-docker`)** scripted, recording pending. Day 4 = SHA pinning, CodeQL, secret scanning, untrusted-PR hardening, OIDC, self-hosted runners, `workflow_run`/`repository_dispatch`, monorepo, Docker→GHCR, custom JS/Docker actions, publishing, debugging/act, hardened capstone. YouTube metadata exists for all four days.
+- **Next:** record Days 3 and 4; refine content as the videos are shot. No unbuilt topics remain in the outline.
+- **Note:** files sit under the folder for the day that teaches them — `day-01/` (`01`–`11`), `day-02/` (`12`–`19`), `day-03/` (`20`–`34`), `day-04/` (`35`–`49`). The numeric prefix is the teaching order.
 - The live scope tracker is the Build Status table in [COURSE_OUTLINE.md](COURSE_OUTLINE.md).
 
 ## What this repository is
 
-This is **course content**, not an application. It backs a 3-day YouTube series ("GitHub Actions: Zero to Advanced in 3 Days", channel LearnWithMithran, repo `Iam-mithran/LWM-GithubActions`). The deliverables are teaching documents and copy-paste-ready workflow YAML — the audience is expected to work **100% in the GitHub web UI with nothing installed locally**.
+This is **course content**, not an application. It backs a 4-day YouTube series ("GitHub Actions: Zero to Advanced in 4 Days", channel LearnWithMithran, repo `Iam-mithran/LWM-GithubActions`). The deliverables are teaching documents and copy-paste-ready workflow YAML — the audience is expected to work **100% in the GitHub web UI with nothing installed locally**.
 
 Two consequences that shape almost every edit:
 
@@ -34,7 +34,7 @@ The course's teaching content is spread across a few files that must agree with 
 
 The root README references workflows by relative markdown link (e.g. `[`11-setup-node.yml`](day-01/workflows/11-setup-node.yml)`), so **renaming or renumbering a file means fixing those links**. Insert `04a` style names rather than renumbering.
 
-**The numeric prefix is the teaching order; the folder is not.** Numbers run continuously across the whole course: `01`–`11` = Day 1, `12`–`19` = Day 2, `20`–`34` = Day 3, and Day 3 continues from `35`. Files `12`–`34` all physically live under `day-02/workflows/` regardless of which day teaches them — this is deliberate (the boundaries shifted during recording). **Do not move files between `day-NN` folders to "match" the day**, and do not assume a file in `day-02/` is Day 2 content — check the number against the mapping above and against the README.
+**The numeric prefix is the teaching order.** Numbers run continuously across the whole course: `01`–`11` = Day 1, `12`–`19` = Day 2, `20`–`34` = Day 3, `35`+ = Day 4 (advanced; not built yet). Each file sits under the folder for the day that teaches it: `day-01/workflows/` (`01`–`11`), `day-02/workflows/` (`12`–`19`), `day-03/workflows/` (`20`–`34`), and `day-04/workflows/` (`35`+, once built). The numeric prefix, not the folder, remains the source of truth for order — always check the number against the mapping above and against the README.
 
 Day 1 (§1–7) and Day 2 (§8–15, through status functions) are written in the README. Day 3 (job outputs onward, files `20`–`34`) has its workflow files built but no teaching script yet.
 
@@ -82,10 +82,15 @@ Day 2 workflows use `npm ci` rather than Day 1's `npm install` (deterministic, a
 
 Demos are recorded against a **throwaway practice repo**, not this one: one workflow file is created in the browser, run, watched in the Actions tab, then deleted before the next.
 
-Day 2 breaks that one-file-at-a-time rule in three places, and the READMEs call out the setup explicitly:
+Day 3 breaks that one-file-at-a-time rule in three places, and the READMEs call out the setup explicitly:
 
 - **28** needs **27** present at the same time (caller + callee).
 - **29** needs `.github/actions/node-ci-setup/action.yml` copied alongside it.
 - **34** (capstone) calls **27**, and needs the `staging` / `production` environments created in repo settings first.
 
-Day 2 also depends on repo-level state a learner must create by hand: the `MY_API_KEY` secret (file 14), and the two environments with a required reviewer on `production` (files 31 and 34).
+Day 4 adds more of these, and several files are **intentionally not runnable in a vanilla repo** (they teach a concept that needs external infra):
+
+- **45** needs `.github/actions/greet-js/` (action.yml + index.js) copied alongside it; **46** needs `.github/actions/greet-docker/` (action.yml + Dockerfile + entrypoint.sh).
+- **39** / **49** (OIDC) need a cloud IAM role trusting the repo's OIDC `sub` claim, ARN in `vars.AWS_ROLE_ARN`; **44** / **49** (GHCR) need a `Dockerfile` in `sample-app/` (not shipped — the header/README give a minimal one); **40** (self-hosted) sits Queued unless a matching runner is online. These "won't just run" states are deliberate teaching points — check the header before "fixing" them.
+
+The course also depends on repo-level state a learner must create by hand: the `MY_API_KEY` secret (Day 2, file 14), and the two environments with a required reviewer on `production` (Day 3, files 31 and 34).

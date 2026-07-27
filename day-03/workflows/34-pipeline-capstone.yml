@@ -1,4 +1,4 @@
-# 34 - 🚀 DAY 2 CAPSTONE: a real build -> test -> deploy pipeline
+# 34 - 🚀 CAPSTONE: a real build -> test -> deploy pipeline
 #
 # Everything from today, in one file that a working team would actually ship.
 #
@@ -28,7 +28,7 @@
 # staging deploys automatically; production sits on "Waiting" until you
 # click Approve; summary runs whatever happened.
 
-name: 34 - CI/CD Pipeline (Day 2 Capstone)
+name: 34 - CI/CD Pipeline (Capstone)
 
 on:
   push:

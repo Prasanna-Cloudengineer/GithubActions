@@ -19,7 +19,7 @@ jobs:
       - name: Report which event started this run
         run: echo "This run was triggered by the '$GITHUB_EVENT_NAME' event."
 
-      # `if` lets a step run only for a specific event (full deep-dive on Day 2)
+      # `if` lets a step run only for a specific event (full deep-dive later)
       - name: Extra step only on pushes to main
         if: github.event_name == 'push'
         run: echo "A push to main happened — could kick off a deployment here."

@@ -26,7 +26,7 @@ GitHub Actions Full Course — Variables, Contexts, Secrets & Multi-Job Pipeline
 
 ## Description
 
-*Welcome back to Learn With Mithran! On Day 1 you shipped your first CI job. Today we finish the fundamentals, build a complete Node.js CI pipeline, and then turn one job into a real **multi-job pipeline** wired together with `needs`, `if` and status functions.*
+*Welcome back to Learn With Mithran! In the previous session you shipped your first CI job. Today we finish the fundamentals, build a complete Node.js CI pipeline, and then turn one job into a real **multi-job pipeline** wired together with `needs`, `if` and status functions.*
 
 We start by closing out the core language of GitHub Actions — **environment variables** and their three scopes (and why `$NAME` and `${{ env.NAME }}` are evaluated by different things), **contexts and expressions** (`github`, `runner`, `env`, `secrets`, `vars`, `needs`, plus the `toJSON` debugging trick), and **secrets vs variables** (masking, the fork-PR rule, and why putting a URL in a secret ruins your logs). Then we bring it all together in a **full Node.js CI capstone** — checkout → setup-node → install → lint → test — including the subfolder rule that trips everyone up (`working-directory` vs `cache-dependency-path`).
 
@@ -77,7 +77,7 @@ Greens Technologys, Perumbakkam (https://maps.app.goo.gl/u34U3rXu8zPFfQh5A)
 
 📌 *Who Is This Video For:*
 
-💻 Anyone who finished Day 1 and wants to go from a single job to a real pipeline
+💻 Anyone who has the fundamentals down and wants to go from a single job to a real pipeline
 🧑‍🎓 Students and freshers preparing for DevOps and cloud job roles
 🛠️ Developers who copy-paste workflow YAML without really knowing how contexts, secrets and `if` work
 🚀 DevOps, SRE and platform engineers standardizing multi-job builds
@@ -86,7 +86,7 @@ Greens Technologys, Perumbakkam (https://maps.app.goo.gl/u34U3rXu8zPFfQh5A)
 
 🔍 *Chapters:*
 0:00 Intro — From One Job to a Real Pipeline
-2:30 Recap of Day 1 + the Sample App
+2:30 Recap of the Previous Session + the Sample App
 6:00 Environment Variables & the Three Scopes
 14:00 `$NAME` vs `${{ env.NAME }}` — Shell vs GitHub Evaluation
 19:00 Contexts & Expressions (+ the toJSON Debug Trick)
@@ -98,9 +98,9 @@ Greens Technologys, Perumbakkam (https://maps.app.goo.gl/u34U3rXu8zPFfQh5A)
 1:20:00 `if` Conditionals — and Why `if: 'false'` Is Actually TRUE
 1:31:00 Status Functions — success, failure, always, cancelled
 1:43:00 Day 2 Cheat Sheet & Recap
-1:49:00 What's Next — Day 3 Preview
+1:49:00 What's Next — Coming Up in the Series
 
-⏭️ *Coming in Day 3:* the rest of the pipeline — **job outputs** (passing data between jobs), **matrix builds** across Node versions and operating systems, **dependency caching**, **artifacts v4** (and the v4 matrix trap), **reusable workflows** and **composite actions**, least-privilege **`GITHUB_TOKEN` permissions**, **environments** with required-reviewer **approvals**, **concurrency** and timeouts — then the advanced hardening: **SHA-pinning** actions, **OIDC** keyless cloud auth, building and publishing your own **JavaScript/Docker actions**, **GHCR**, self-hosted runners, **CodeQL** and secret scanning, and the full hardened capstone.
+⏭️ *Coming up next in the series:* the rest of the pipeline — **job outputs** (passing data between jobs), **matrix builds** across Node versions and operating systems, **dependency caching**, **artifacts v4** (and the v4 matrix trap), **reusable workflows** and **composite actions**, least-privilege **`GITHUB_TOKEN` permissions**, **environments** with required-reviewer **approvals**, **concurrency** and timeouts — then the advanced hardening: **SHA-pinning** actions, **OIDC** keyless cloud auth, building and publishing your own **JavaScript/Docker actions**, **GHCR**, self-hosted runners, **CodeQL** and secret scanning, and the full hardened capstone.
 
 👍 If this video helps you, like, subscribe, and turn on notifications for more hands-on content on GitHub Actions, DevOps, Azure, AWS, Linux, and Python.
 

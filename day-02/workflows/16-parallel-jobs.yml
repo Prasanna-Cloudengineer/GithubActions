@@ -1,5 +1,5 @@
 # 16 - Jobs run in PARALLEL by default
-# Day 1 used a single job. A workflow can have many, and unless you connect
+# So far we have used a single job. A workflow can have many, and unless you connect
 # them, GitHub starts them ALL AT THE SAME TIME on separate runners.
 #
 # Two things that surprise everyone the first time:

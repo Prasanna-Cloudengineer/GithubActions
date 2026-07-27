@@ -1,0 +1,72 @@
+# 48 - Debugging workflows: logs, re-runs, and running locally with `act`
+#
+# When a workflow misbehaves, you have four tools, cheapest first.
+#
+# 1) RE-RUN WITH DEBUG LOGGING (no file changes needed)
+#    In the failed run: "Re-run jobs" -> tick "Enable debug logging". You get
+#    the normal log PLUS internal runner tracing. For persistent debug output,
+#    add two repo SECRETS (Settings -> Secrets):
+#        ACTIONS_STEP_DEBUG    = true   -> verbose step-level logs
+#        ACTIONS_RUNNER_DEBUG  = true   -> runner/system-level logs
+#    They turn every future run verbose until you remove them.
+#
+# 2) PRINT YOUR OWN DEBUG LINES
+#    `echo "::debug::message"` only shows when debug logging is on, so it stays
+#    quiet in normal runs. The `toJSON(...)` context dump (seen earlier) is still
+#    the fastest way to see what's actually available. Job summaries via
+#    $GITHUB_STEP_SUMMARY are great for surfacing state without log-diving.
+#
+# 3) INTERACTIVE SSH INTO A RUNNER (for the truly stuck)
+#    `mxschmitt/action-tmate` opens an SSH/web session INTO the live runner so
+#    you can poke around its filesystem mid-run. Powerful, and a security risk —
+#    gate it behind a manual dispatch input and never leave it on.
+#
+# 4) RUN THE WHOLE THING LOCALLY WITH `act`
+#    `act` (https://github.com/nektos/act) executes your workflows on your own
+#    machine in Docker, so you don't burn a commit + push + wait cycle for every
+#    tweak. Great for fast iteration; NOT a perfect replica (some contexts,
+#    secrets, and GitHub-only services differ), so always confirm on GitHub
+#    before trusting a green `act` run.
+#        act                        # runs the default `push` event
+#        act workflow_dispatch      # runs a specific event
+#        act -j build               # runs one job
+#        act --secret-file .secrets # feed it secrets locally
+#
+# WHAT TO OBSERVE: run this normally — the `::debug::` line is hidden. Re-run
+# with debug logging enabled and the same line now appears, alongside the extra
+# runner tracing.
+
+name: 48 - Debugging & act
+
+on:
+  workflow_dispatch:
+    inputs:
+      open_debug_shell:
+        description: 'Open an SSH debug session into the runner (tmate)?'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  demo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: A normal line (always visible)
+        run: echo "This always shows in the log."
+
+      - name: A debug line (only with debug logging on)
+        run: echo "::debug::You only see me when ACTIONS_STEP_DEBUG=true."
+
+      - name: Dump a context to inspect it
+        run: echo "$GH_CTX"
+        env:
+          GH_CTX: ${{ toJSON(github.event) }}
+
+      # Only opens if you tick the box at dispatch time. Gate risky debug tools.
+      - name: Interactive debug shell (opt-in)
+        if: inputs.open_debug_shell
+        uses: mxschmitt/action-tmate@v3
+        with:
+          limit-access-to-actor: true      # only YOU can connect

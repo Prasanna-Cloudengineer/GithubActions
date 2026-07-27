@@ -1,6 +1,6 @@
-# GitHub Actions: Zero to Advanced in 3 Days
+# GitHub Actions: Zero to Advanced in 4 Days
 
-A hands-on, project-driven course that takes you from *never having written a line of YAML* to *building secure, production-grade CI/CD pipelines* with GitHub Actions. Built for a YouTube audience, it is structured as three self-contained days of roughly **4–6 hours of video each**, mixing short concept explainers with live, buildable demos.
+A hands-on, project-driven course that takes you from *never having written a line of YAML* to *building secure, production-grade CI/CD pipelines* with GitHub Actions. Built for a YouTube audience, it is structured as four self-contained days of roughly **2–4 hours of video each**, mixing short concept explainers with live, buildable demos.
 
 Everything is taught against the **current (2026) GitHub Actions platform and terminology** — current action versions, artifact actions **v4**, OIDC cloud authentication, SHA-pinning and immutable-actions guidance, and least-privilege `GITHUB_TOKEN` defaults.
 
@@ -61,54 +61,72 @@ By the end of the course you will be able to:
    3. Filtering by branches, tags, and paths.
 5. **Runners**
    1. GitHub-hosted runners: `ubuntu-latest`, `windows-latest`, `macos-latest`, and what's preinstalled.
-   2. `runs-on` labels and when a runner matters (self-hosted is previewed for Day 3).
-6. **Using Marketplace actions**
+   2. `runs-on` labels and when a runner matters (self-hosted is covered later).
+6. **Steps: `run` vs. `uses`**
+   1. `run:` shell commands vs. `uses:` reusable actions, and passing inputs with `with:`.
+7. **Using Marketplace actions**
    1. `actions/checkout` (current **v5**) and `actions/setup-node` (current **v6**) — and how to read an action's README/inputs (`with`).
-   2. Versioning references: `@v5` major tag vs. exact tag vs. commit **SHA** (why SHA matters — full deep-dive on Day 3).
-7. **Variables, contexts, and secrets (intro)**
-   1. Default environment variables and custom `env` at workflow/job/step scope.
-   2. Contexts and expressions: `${{ github.* }}`, `${{ runner.* }}`, `${{ env.* }}`, `${{ secrets.* }}`.
-   3. Adding a first repository **secret** and referencing it safely (never echo secrets).
+   2. Versioning references: `@v5` major tag vs. exact tag vs. commit **SHA** (why SHA matters — full deep-dive later in the course).
 
-> **Hands-on:** Build a Node.js CI workflow from an empty repo — trigger on push and pull request, check out the code, set up Node, install dependencies, run lint and tests, and read the results in the Actions tab. Add a manual `workflow_dispatch` run and a status badge in the README.
+> **Hands-on:** From an empty repo, build up to a Node.js CI workflow — trigger on push, pull request, and a manual `workflow_dispatch` button; pick a runner; check out the code; and set up Node. Read every run in the Actions tab. (The full install → lint → test capstone comes next.)
 
 ---
 
-## Day 2 — Intermediate: Real Pipelines (Jobs, Matrix, Reuse)
+## Day 2 — The workflow language & your first multi-job pipeline
 
-**Goal:** Turn a single-job workflow into a real, multi-stage pipeline — parallelized, cached, connected by artifacts, and made maintainable with reusable building blocks and proper permissions.
+**Goal:** Finish the core language of GitHub Actions — variables, contexts, and secrets — ship a complete single-job CI pipeline, then take the leap from one job to a real multi-job DAG wired together with `needs`, `if`, and status functions.
 
 ### Topics
 
-1. **Orchestrating jobs**
-   1. `needs` for job dependencies and building a DAG (build → test → deploy).
-   2. `if` conditionals and status functions (`success()`, `failure()`, `always()`, `cancelled()`).
-   3. Passing data with **job outputs** and `steps.*.outputs` (using `$GITHUB_OUTPUT`).
-2. **Matrix builds**
-   1. `strategy.matrix` across versions/OSes; `include`/`exclude`.
-   2. `fail-fast` and `max-parallel` for controlling matrix behavior.
-3. **Caching and artifacts**
-   1. **Dependency caching** with `actions/cache` (and built-in caching in setup actions).
-   2. **Artifacts v4** — `actions/upload-artifact@v4` / `download-artifact@v4`; the v3 actions were fully retired (Jan 30, 2025), so v4 is the standard.
-   3. v4 behavior to know: artifacts are **immutable**, artifact **names must be unique** per run (no appending across parallel jobs), and the `upload-artifact/merge` action for combining matrix outputs.
-4. **Reuse: choosing the right building block**
-   1. **Reusable workflows** (`on: workflow_call`, typed `inputs`/`secrets`/`outputs`) — reuse an entire workflow.
-   2. **Composite actions** — bundle multiple steps into one local/shared action.
-   3. **Custom actions** — JavaScript vs. Docker container actions (concept + when to reach for each; full build on Day 3).
-   4. Decision guide: workflow-level reuse vs. step-level reuse.
-5. **Environments, secrets, and token permissions**
-   1. **Environments** and environment-scoped secrets/variables (e.g., `staging`, `production`).
-   2. Repository vs. environment vs. organization secrets, and precedence.
-   3. **`GITHUB_TOKEN` permissions**: the least-privilege model, the `permissions:` block, and setting read-only by default then elevating per-job.
-6. **Concurrency and efficiency**
-   1. `concurrency` groups and `cancel-in-progress` (e.g., cancel stale PR builds; serialize deploys).
-   2. Timeouts, `continue-on-error`, and keeping pipelines fast and cheap.
+1. **Variables, contexts, and secrets**
+   1. Default environment variables and custom `env` at workflow/job/step scope (and which scope wins); `$NAME` (shell) vs. `${{ env.NAME }}` (GitHub).
+   2. Contexts and expressions: `${{ github.* }}`, `${{ runner.* }}`, `${{ env.* }}`, `${{ needs.* }}`, `${{ vars.* }}`, and the `toJSON()` debugging trick; context availability.
+   3. **Secrets vs. variables**: adding a repository secret, masking, the fork-PR rule, and referencing them safely (never echo a secret; don't put a URL in a secret).
+2. **Your first full CI pipeline (capstone)**
+   1. Combine triggers + runner + checkout + setup-node + `env` into install → lint → test against `sample-app/`.
+   2. The subfolder rule: `defaults.run.working-directory` (for `run:`) vs. repo-root paths for `uses:` (`cache-dependency-path`); reading a red build on purpose; the status badge.
+3. **From one job to many**
+   1. Why every job runs on its own isolated runner, and what that breaks (nothing is shared).
+   2. `needs` for job dependencies and building a DAG (build → test → deploy), including fan-in.
+   3. `if` conditionals on jobs and steps (and the `if: 'false'` quoting gotcha that is actually **TRUE**).
+   4. **Status functions** (`success()`, `failure()`, `always()`, `cancelled()`) and the invisible `if: success()` default.
 
-> **Hands-on:** Build a multi-stage **build → test → deploy** pipeline. Run tests across a **matrix** of Node versions and OSes, cache dependencies, upload a build artifact and consume it in a later job, factor a shared job into a **reusable workflow**, gate the deploy behind a `production` **environment**, and lock down `GITHUB_TOKEN` with an explicit least-privilege `permissions:` block.
+> **Hands-on:** Ship the full Node.js CI capstone — trigger, checkout, setup-node, install, lint, test, read the results — then split it into multiple jobs connected with `needs`, made conditional with `if`, and add a reporter job that runs on `failure()`.
 
 ---
 
-## Day 3 — Advanced: Security, OIDC, Custom Actions & Deployment
+## Day 3 — Real pipelines: matrix, caching, artifacts, reuse & gated deploys
+
+**Goal:** Turn the multi-job workflow into a production-grade pipeline — pass data between jobs, parallelize with a matrix, speed it up with caching, connect jobs with artifacts, factor out reusable building blocks, lock down permissions, and gate the deploy behind a human approval.
+
+### Topics
+
+1. **Passing data between jobs**
+   1. **Job outputs** and `steps.*.outputs` via `$GITHUB_OUTPUT` — the three-link chain, multi-line values, and why every output is a string.
+2. **Matrix builds**
+   1. `strategy.matrix` across versions/OSes; `include`/`exclude` (and why `exclude` is applied before `include`).
+   2. `fail-fast` and `max-parallel` for controlling matrix behavior.
+3. **Caching and artifacts**
+   1. **Dependency caching** with `actions/cache` (and built-in caching in setup actions): cache keys, `hashFiles()`, `restore-keys`, and the immutable-key bug.
+   2. **Artifacts v4** — `actions/upload-artifact@v4` / `download-artifact@v4`; the v3 actions were fully retired (Jan 30, 2025), so v4 is the standard.
+   3. v4 behavior to know: artifacts are **immutable**, artifact **names must be unique** per run (no appending across parallel jobs), and the `upload-artifact/merge` action for combining matrix outputs.
+4. **Reuse: choosing the right building block**
+   1. **Reusable workflows** (`on: workflow_call`, typed `inputs`/`secrets`/`outputs`) — reuse an entire job.
+   2. **Composite actions** — bundle multiple steps into one local/shared action.
+   3. Decision guide: workflow-level reuse vs. step-level reuse (custom JavaScript/Docker actions are built later in the course).
+5. **Environments, secrets, and token permissions**
+   1. **`GITHUB_TOKEN` permissions**: the least-privilege model, the `permissions:` block (it's not additive), and setting read-only by default then elevating per-job.
+   2. **Environments** and environment-scoped secrets/variables (e.g., `staging`, `production`); repository vs. environment vs. organization secret precedence.
+   3. **Deployment protection rules**: required reviewers/approvals, wait timers, and allowed branches — pausing a deploy until a human clicks Approve.
+6. **Concurrency and efficiency**
+   1. `concurrency` groups and `cancel-in-progress` (e.g., cancel stale PR builds; serialize deploys).
+   2. Timeouts, `continue-on-error` (`outcome` vs. `conclusion`), and keeping pipelines fast and cheap.
+
+> **Hands-on:** Build a multi-stage **build → test → deploy** pipeline. Run tests across a **matrix** of Node versions and OSes, cache dependencies, upload a build artifact and consume it in a later job, factor the test job into a **reusable workflow**, gate the deploy behind a `production` **environment** with a required reviewer, and lock down `GITHUB_TOKEN` with an explicit least-privilege `permissions:` block.
+
+---
+
+## Day 4 — Advanced: Security, OIDC, Custom Actions & Publishing
 
 **Goal:** Harden and scale your pipelines the way production teams do — secure supply chain, keyless cloud auth, custom tooling, container publishing, and gated deployments — culminating in a full capstone.
 
@@ -130,12 +148,12 @@ By the end of the course you will be able to:
    1. `workflow_run` (chain workflows) and `repository_dispatch` (external events).
    2. **Reusable workflow chaining** and passing secrets/outputs between them.
    3. **Monorepo strategies**: path filters, per-path pipelines, and change detection.
-5. **Deployment gates & approvals**
-   1. **Deployment protection rules**: required reviewers/approvals, wait timers, and allowed branches on environments.
-   2. Deployment history, and rollbacks/re-runs.
+5. **Advanced deployments** *(builds on the environments introduced earlier)*
+   1. Deployment history on the Environments page, and rollbacks / re-runs of a deployment.
+   2. Multi-environment promotion patterns and custom deployment-protection integrations.
 6. **Building and publishing**
    1. Build and push a **Docker image to GHCR** (GitHub Container Registry) with proper `packages: write` permission.
-   2. Author, tag/version, and publish your **own custom action** (composite or JavaScript), following semantic version tags + moving major tag.
+   2. Author, tag/version, and publish your **own custom action** — **JavaScript** vs. **Docker container** actions, when to reach for each, following semantic version tags + moving major tag.
    3. Debugging: re-run with debug logging, step debugging, and running workflows locally with **`act`**.
 
 > **Hands-on / Capstone:** Ship a complete, hardened delivery pipeline: all third-party actions **pinned to SHA**, least-privilege `permissions`, CodeQL + secret scanning enabled, a **Docker image built and pushed to GHCR**, and a deploy job that authenticates to a cloud provider via **OIDC (no static secrets)** and is gated behind a `production` environment with **required approval**. Bonus: extract a step into a **published custom action** and consume it back in the pipeline.
@@ -150,15 +168,16 @@ This document is the master blueprint. The teaching script for the recorded vide
 |-----|------------------|----------------|------------------|--------|
 | Day 1 | [`README.md`](README.md) §1–7 | [`day-01/workflows/`](day-01/workflows/) `01`–`11` | [`youtube/day01_youtube.md`](youtube/day01_youtube.md) | ✅ Recorded |
 | Day 2 | [`README.md`](README.md) §8–15 | [`day-02/workflows/`](day-02/workflows/) `12`–`19` | [`youtube/day02_youtube.md`](youtube/day02_youtube.md) | 🎬 Recording |
-| Day 3 | — | [`day-02/workflows/`](day-02/workflows/) `20`–`34` + [`day-02/actions/`](day-02/actions/) *(files ready, script pending)* | — | 📝 Files ready, script pending |
+| Day 3 | [`README.md`](README.md) §16–29 | [`day-03/workflows/`](day-03/workflows/) `20`–`34` + [`day-03/actions/`](day-03/actions/) | [`youtube/day03_youtube.md`](youtube/day03_youtube.md) | 📝 Script ready, recording pending |
+| Day 4 | [`README.md`](README.md) §30–43 | [`day-04/workflows/`](day-04/workflows/) `35`–`49` + [`day-04/actions/`](day-04/actions/) | [`youtube/day04_youtube.md`](youtube/day04_youtube.md) | 📝 Script ready, recording pending |
 
-**Workflow files are numbered continuously across the whole course**, not per day — the number is the teaching order, independent of which folder the file sits in.
+**Workflow files are numbered continuously across the whole course** (`01`–`11` = Day 1, `12`–`19` = Day 2, `20`–`34` = Day 3, `35`–`49` = Day 4) — the number is the teaching order. Each file lives under the folder for the day that teaches it (`day-01/` … `day-04/`).
 
-> ⚠️ **The day boundaries moved as the videos were recorded, and the file layout was deliberately left in place.**
+> ⚠️ **The course grew from a 3-day plan into 4 days as the videos were recorded.** The original blueprint packed all of "intermediate real pipelines" into one day; in practice it split across Day 2 (orchestration) and Day 3 (matrix → reuse → gated deploys), and the advanced material became its own Day 4.
 > - Day 1 stopped after `actions/setup-node`, so variables / contexts / secrets and the CI capstone (`12`–`15`) are taught at the **start of Day 2**.
-> - Day 2 runs through **status functions (`19`)**. Everything from **job outputs (`20`) onward is Day 3**.
-> - The files for `12`–`34` all live under [`day-02/workflows/`](day-02/workflows/) regardless of which day teaches them — the numeric prefix, not the folder, is the source of truth for order. Don't relocate them to match the day.
+> - Day 2 runs through **status functions (`19`)**. **Job outputs (`20`) through the pipeline capstone (`34`) are Day 3.**
+> - Everything **advanced** — SHA pinning, CodeQL/secret scanning, OIDC, custom actions, GHCR, self-hosted runners — is **Day 4** (`35`–`49`).
 >
-> The single root [`README.md`](README.md) is the source of truth for what is actually taught and in what order; the per-topic lists below are the original blueprint.
+> The single root [`README.md`](README.md) is the source of truth for what is actually taught and in what order; the per-topic lists above are the blueprint.
 
-**Next:** write the Day 3 teaching content (job outputs, matrix, caching, artifacts, reuse, permissions, environments, concurrency — files `20`–`34` already exist) and record it.
+**Next:** all four days' teaching content and workflow files are written (README §1–43, workflows `01`–`49`, `youtube/day0{1..4}_youtube.md`). Remaining work is **recording** Days 3 and 4 and refining as the videos are shot.

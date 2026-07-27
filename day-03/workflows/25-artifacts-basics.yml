@@ -59,7 +59,7 @@ jobs:
           name: app-build                 # how later jobs and the UI refer to it
           path: sample-app/dist/          # ⚠️ relative to the REPO ROOT, always.
                                           # `defaults.run.working-directory` does
-                                          # NOT apply to `uses:` steps (Day 1 rule).
+                                          # NOT apply to `uses:` steps (the working-directory rule).
           retention-days: 7               # default is 90; shorter = cheaper storage
           if-no-files-found: error        # 'warn' (default) hides a broken build
 

@@ -19,7 +19,7 @@
 # HOW TO REFERENCE ONE:
 #   ./.github/workflows/file.yml                    same repo (no @ref, uses this commit)
 #   owner/repo/.github/workflows/file.yml@v1        another repo, at a tag
-#   owner/repo/.github/workflows/file.yml@<sha>     another repo, pinned (Day 3)
+#   owner/repo/.github/workflows/file.yml@<sha>     another repo, pinned (covered later)
 #
 # WHAT TO OBSERVE: the run graph shows the caller's job with the CALLEE's
 # jobs nested inside it. Click through to see the reused steps.
@@ -50,7 +50,7 @@ jobs:
       API_KEY: ${{ secrets.MY_API_KEY }}
 
       # Shortcut: `secrets: inherit` hands over ALL of the caller's secrets.
-      # Convenient, and exactly the kind of over-sharing Day 3 argues against.
+      # Convenient, and exactly the kind of over-sharing we argue against later.
       # Prefer naming them one by one.
 
   # ── 4. A matrix OF reusable-workflow calls ───────────────────────────────
