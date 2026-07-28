@@ -95,7 +95,7 @@ Greens Technologys, Perumbakkam (https://maps.app.goo.gl/u34U3rXu8zPFfQh5A)
 2:11:00 Day 3 Cheat Sheet & Recap
 2:17:00 What's Next — Permissions, Approvals & Security
 
-⏭️ *Coming next:* locking down `GITHUB_TOKEN` with least-privilege `permissions`, environments with scoped secrets and **required human approvals**, `concurrency` and timeouts, the full **build → test → deploy** capstone — then supply-chain security and pinning actions to a commit SHA, CodeQL and secret scanning, OIDC keyless authentication to AWS/Azure/GCP, self-hosted runners, `workflow_run` and monorepo strategies, publishing images to GHCR, and building and publishing your own JavaScript and Docker actions.
+⏭️ *Coming next:* locking down `GITHUB_TOKEN` with least-privilege `permissions`, environments with scoped secrets and **required human approvals**, `concurrency` and timeouts, and the full **build → test → deploy** capstone — and then, in the finale, supply-chain security and pinning actions to a commit SHA, CodeQL and secret scanning, OIDC keyless authentication to AWS/Azure/GCP, self-hosted runners, `workflow_run` and monorepo strategies, publishing images to GHCR, and building and publishing your own JavaScript and Docker actions.
 
 👍 If this video helps you, like, subscribe, and turn on notifications for more hands-on content on GitHub Actions, DevOps, Azure, AWS, Linux, and Python.
 

@@ -1,6 +1,6 @@
-# GitHub Actions: Zero to Advanced in 4 Days
+# GitHub Actions: Zero to Advanced in 5 Days
 
-A hands-on, project-driven course that takes you from *never having written a line of YAML* to *building secure, production-grade CI/CD pipelines* with GitHub Actions. Built for a YouTube audience, it is structured as four self-contained days of roughly **2–4 hours of video each**, mixing short concept explainers with live, buildable demos.
+A hands-on, project-driven course that takes you from *never having written a line of YAML* to *building secure, production-grade CI/CD pipelines* with GitHub Actions. Built for a YouTube audience, it is structured as five self-contained days of roughly **2–3 hours of video each**, mixing short concept explainers with live, buildable demos.
 
 Everything is taught against the **current (2026) GitHub Actions platform and terminology** — current action versions, Node 24 artifact actions, OIDC cloud authentication, SHA-pinning and immutable-actions guidance, and least-privilege `GITHUB_TOKEN` defaults.
 
@@ -119,9 +119,9 @@ By the end of the course you will be able to:
 
 ---
 
-## Day 4 — Gated deploys, Security, OIDC, Custom Actions & Publishing
+## Day 4 — Gated deploys: permissions, environments & the production pipeline
 
-**Goal:** Finish the production pipeline — least-privilege tokens, approvals, concurrency and timeouts — then harden and scale it the way production teams do: secure supply chain, keyless cloud auth, custom tooling and container publishing, culminating in a full hardened capstone.
+**Goal:** Finish the production pipeline — least-privilege tokens, environments with human approvals, concurrency and timeouts — culminating in a full build → test → deploy capstone with a gated `production` environment. (Hardening and scaling it is where Day 5 takes over.)
 
 ### Topics
 
@@ -132,27 +132,38 @@ By the end of the course you will be able to:
 2. **Concurrency and efficiency**
    1. `concurrency` groups and `cancel-in-progress` (e.g., cancel stale PR builds; serialize deploys).
    2. Timeouts, `continue-on-error` (`outcome` vs. `conclusion`), and keeping pipelines fast and cheap.
-   3. **Capstone (mid-day):** the full **build → test → deploy** pipeline — matrix tests via a reusable workflow, build once, deploy the same artifact to `staging` then a gated `production`.
-3. **Security hardening (supply chain)**
+   3. **Capstone:** the full **build → test → deploy** pipeline — matrix tests via a reusable workflow, build once, deploy the same artifact to `staging` then a gated `production`.
+3. **Advanced deployments** *(builds on the environments introduced above)*
+   1. Deployment history on the Environments page, and rollbacks / re-runs of a deployment.
+   2. Multi-environment promotion patterns and custom deployment-protection integrations.
+
+> **Hands-on:** Lock the pipeline down — a `permissions:` block that denies a write, `staging` and `production` environments with scoped secrets, a required reviewer that pauses the run until you click Approve, `concurrency` that cancels a stale build, and `timeout-minutes` on every job — then ship the full gated **build → test → deploy** capstone.
+
+---
+
+## Day 5 — Finale: Security, OIDC, Custom Actions & Publishing
+
+**Goal:** Harden and scale the gated pipeline the way production security teams do: a secure supply chain, code and secret scanning, keyless cloud auth, custom tooling and container publishing — culminating in a full hardened capstone.
+
+### Topics
+
+1. **Security hardening (supply chain)**
    1. **Pin actions to a full commit SHA**, not a tag/branch — why (the 2025 `tj-actions/changed-files` compromise) and how; using **Dependabot** to bump pinned SHAs.
    2. **Immutable actions / immutable releases** and org-level **SHA-pinning enforcement & action-blocking policies** (available since Aug 2025) that fail unpinned workflows.
    3. Reconfirming **least-privilege `GITHUB_TOKEN`** and safe secret handling; risks of `pull_request_target` and untrusted PR code (poisoned pipeline execution).
    4. **Secret scanning** / push protection and **CodeQL** code scanning as part of the pipeline.
-4. **OIDC — keyless cloud authentication**
+2. **OIDC — keyless cloud authentication**
    1. Why long-lived cloud secrets are risky; how **OpenID Connect (OIDC)** issues **short-lived, scoped tokens** at runtime.
    2. Configuring a cloud provider to trust GitHub's OIDC provider (AWS role / Azure / GCP) and the `id-token: write` permission.
    3. Scoping trust with subject claims (repo, branch, environment).
-5. **Self-hosted & scaled runners**
+3. **Self-hosted & scaled runners**
    1. When to use **self-hosted runners** (custom hardware, private network, licensed tools) and their security caveats (avoid on public repos).
    2. Runner groups and a note on modern scaling (Actions Runner Controller / runner scale sets).
-6. **Advanced triggers & orchestration**
+4. **Advanced triggers & orchestration**
    1. `workflow_run` (chain workflows) and `repository_dispatch` (external events).
    2. **Reusable workflow chaining** and passing secrets/outputs between them.
    3. **Monorepo strategies**: path filters, per-path pipelines, and change detection.
-7. **Advanced deployments** *(builds on the environments introduced earlier)*
-   1. Deployment history on the Environments page, and rollbacks / re-runs of a deployment.
-   2. Multi-environment promotion patterns and custom deployment-protection integrations.
-8. **Building and publishing**
+5. **Building and publishing**
    1. Build and push a **Docker image to GHCR** (GitHub Container Registry) with proper `packages: write` permission.
    2. Author, tag/version, and publish your **own custom action** — **JavaScript** vs. **Docker container** actions, when to reach for each, following semantic version tags + moving major tag.
    3. Debugging: re-run with debug logging, step debugging, and running workflows locally with **`act`**.
@@ -170,15 +181,19 @@ This document is the master blueprint. The teaching script for the recorded vide
 | Day 1 | [`README.md`](README.md) §1–7 | [`day-01/workflows/`](day-01/workflows/) `01`–`11` | [`youtube/day01_youtube.md`](youtube/day01_youtube.md) | ✅ Recorded |
 | Day 2 | [`README.md`](README.md) §8–15 | [`day-02/workflows/`](day-02/workflows/) `12`–`19` | [`youtube/day02_youtube.md`](youtube/day02_youtube.md) | ✅ Recorded |
 | Day 3 | [`README.md`](README.md) §16–24 | [`day-03/workflows/`](day-03/workflows/) `20`–`29` + [`day-03/actions/`](day-03/actions/) | [`youtube/day03_youtube.md`](youtube/day03_youtube.md) | ✅ Recorded (through the composite action, `29`) |
-| Day 4 | [`README.md`](README.md) §25–43 | [`day-04/workflows/`](day-04/workflows/) `30`–`49` + [`day-04/actions/`](day-04/actions/) | [`youtube/day04_youtube.md`](youtube/day04_youtube.md) | 📝 Script ready, recording pending |
+| Day 4 | [`README.md`](README.md) §25–29 | [`day-04/workflows/`](day-04/workflows/) `30`–`34` | [`youtube/day04_youtube.md`](youtube/day04_youtube.md) | 📝 Script ready, recording pending |
+| Day 5 | [`README.md`](README.md) §30–43 | [`day-05/workflows/`](day-05/workflows/) `35`–`49` + [`day-05/actions/`](day-05/actions/) | [`youtube/day05_youtube.md`](youtube/day05_youtube.md) | 📝 Script ready, recording pending |
 
-**Workflow files are numbered continuously across the whole course** (`01`–`11` = Day 1, `12`–`19` = Day 2, `20`–`29` = Day 3, `30`–`49` = Day 4) — the number is the teaching order. Each file lives under the folder for the day that teaches it (`day-01/` … `day-04/`).
+**Workflow files are numbered continuously across the whole course** (`01`–`11` = Day 1, `12`–`19` = Day 2, `20`–`29` = Day 3, `30`–`34` = Day 4, `35`–`49` = Day 5) — the number is the teaching order. Each file lives under the folder for the day that teaches it (`day-01/` … `day-05/`).
 
-> ⚠️ **The course grew from a 3-day plan into 4 days, and the day boundaries moved again during recording.** The original blueprint packed all of "intermediate real pipelines" into one day; in practice it split across Day 2 (orchestration) and Day 3 (matrix → caching → artifacts → reuse), and everything from token permissions onward became Day 4.
+> ⚠️ **The course grew from a 3-day plan into 5 days, and the day boundaries moved as recording progressed.** The original blueprint packed all of "intermediate real pipelines" into one day; in practice it split across Day 2 (orchestration) and Day 3 (matrix → caching → artifacts → reuse), and everything from token permissions onward became Days 4 and 5.
 > - Day 1 stopped after `actions/setup-node`, so variables / contexts / secrets and the CI capstone (`12`–`15`) are taught at the **start of Day 2**.
 > - Day 2 runs through **status functions (`19`)**. **Job outputs (`20`) through the composite action (`29`) are Day 3** — that is where the recorded Day 3 video ends.
-> - Day 4 therefore opens with the material the blueprint had put in Day 3: **`GITHUB_TOKEN` permissions (`30`), environments & approvals (`31`), concurrency (`32`), timeouts (`33`) and the pipeline capstone (`34`)** — then continues into the advanced set (SHA pinning, CodeQL/secret scanning, OIDC, custom actions, GHCR, self-hosted runners) through `49`. It is the longest day; splitting it into `4a`/`4b` is a reasonable option when recording.
+> - Day 4 opens with the material the blueprint had put in Day 3: **`GITHUB_TOKEN` permissions (`30`), environments & approvals (`31`), concurrency (`32`), timeouts (`33`)** — and ends at the **production pipeline capstone (`34`)**.
+> - Day 5 is the finale: the whole advanced/security set — **SHA pinning (`35`), CodeQL & secret scanning (`36`–`37`), untrusted PRs (`38`), OIDC (`39`), self-hosted runners (`40`), orchestration & monorepos (`41`–`43`), GHCR and custom actions (`44`–`48`)** — ending in the **hardened capstone (`49`)**.
+>
+> **The course therefore has two capstones:** `34` (the production pipeline, closing Day 4) and `49` (the hardened pipeline, closing Day 5).
 >
 > The single root [`README.md`](README.md) is the source of truth for what is actually taught and in what order; the per-topic lists above are the blueprint.
 
-**Next:** all four days' teaching content and workflow files are written (README §1–43, workflows `01`–`49`, `youtube/day0{1..4}_youtube.md`). Remaining work is **recording** Day 4 (`30`–`49`) and refining as the video is shot.
+**Next:** all five days' teaching content and workflow files are written (README §1–43, workflows `01`–`49`, `youtube/day0{1..5}_youtube.md`). Remaining work is **recording** Day 4 (`30`–`34`) and Day 5 (`35`–`49`), and refining as the videos are shot.

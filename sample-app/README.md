@@ -17,7 +17,7 @@ break a demo mid-recording, and `package-lock.json` is committed so
 | `src/index.js` | The entry point. What the Docker image runs. |
 | `test/math.test.js` | Tests, using Node's **built-in** runner (`node --test`). ESM. |
 | `build.js` | A fake build: copies `src/` → `dist/` and stamps `build-info.json`. |
-| `Dockerfile` | The image Day 4 builds and pushes to GHCR. |
+| `Dockerfile` | The image the GHCR workflows build and push. |
 | `package-lock.json` | Committed so `npm ci` works. Do not delete. |
 
 ## The four commands the workflows call

@@ -1,5 +1,5 @@
 # 45 - USING a JavaScript action
-# Pairs with day-04/actions/greet-js/ (action.yml + index.js).
+# Pairs with day-05/actions/greet-js/ (action.yml + index.js).
 #
 # 📋 SETUP — copy TWO things into your practice repo:
 #      .github/workflows/45-javascript-action-demo.yml   (this file)

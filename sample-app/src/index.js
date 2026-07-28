@@ -1,5 +1,5 @@
-// The app's ENTRY POINT — the thing the Docker image runs (Day 4, files 44
-// and 49). Everything else in this folder is a library; this is the process.
+// The app's ENTRY POINT — the thing the Docker image runs (files 44 and 49).
+// Everything else in this folder is a library; this is the process.
 //
 // Still zero dependencies: Node's standard library only, so `docker build`
 // never has to reach the network for a package.

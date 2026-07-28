@@ -1,5 +1,5 @@
 # 46 - USING a Docker container action
-# Pairs with day-04/actions/greet-docker/ (action.yml + Dockerfile + entrypoint.sh).
+# Pairs with day-05/actions/greet-docker/ (action.yml + Dockerfile + entrypoint.sh).
 #
 # 📋 SETUP — copy these into your practice repo:
 #      .github/workflows/46-docker-action-demo.yml
