@@ -6,9 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 _Keep this block updated when finishing a chunk of work — it's the first thing a new session (or the same author on another machine) should read._
 
-- **Done:** All four days' teaching content + workflow files are written. Day 1 (README §1–7, workflows `01`–`11`) recorded; Day 2 (§8–15, `12`–`19`) being recorded; Day 3 (§16–29, `20`–`34`) and **Day 4 (§30–43, `35`–`49` + [day-04/actions/](day-04/actions/): a JS action `greet-js` and a Docker action `greet-docker`)** scripted, recording pending. Day 4 = SHA pinning, CodeQL, secret scanning, untrusted-PR hardening, OIDC, self-hosted runners, `workflow_run`/`repository_dispatch`, monorepo, Docker→GHCR, custom JS/Docker actions, publishing, debugging/act, hardened capstone. YouTube metadata exists for all four days.
-- **Next:** record Days 3 and 4; refine content as the videos are shot. No unbuilt topics remain in the outline.
-- **Note:** files sit under the folder for the day that teaches them — `day-01/` (`01`–`11`), `day-02/` (`12`–`19`), `day-03/` (`20`–`34`), `day-04/` (`35`–`49`). The numeric prefix is the teaching order.
+- **Done:** All four days' teaching content + workflow files are written. Recorded: Day 1 (README §1–7, workflows `01`–`11`), Day 2 (§8–15, `12`–`19`), Day 3 (§16–24, `20`–`29`, ending at the composite action). **Day 4 (§25–43, `30`–`49` + [day-04/actions/](day-04/actions/): a JS action `greet-js` and a Docker action `greet-docker`)** is scripted, recording pending. YouTube metadata exists for all four days.
+- **The Day 3/4 boundary moved during recording.** Day 3 was originally planned as `20`–`34`; in the actual recording it stopped after the composite action (`29`), so `30`–`34` (token permissions, environments & approvals, concurrency, timeouts, pipeline capstone) were moved into `day-04/` and now open Day 4 before the advanced/security material (`35`–`49`). Day 4 is consequently the longest day and carries **two capstones** — `34` (production pipeline) and `49` (hardened pipeline).
+- **Next:** record Day 4 (`30`–`49`); refine content as the video is shot. No unbuilt topics remain in the outline.
+- **Note:** files sit under the folder for the day that teaches them — `day-01/` (`01`–`11`), `day-02/` (`12`–`19`), `day-03/` (`20`–`29`), `day-04/` (`30`–`49`). The numeric prefix is the teaching order.
 - The live scope tracker is the Build Status table in [COURSE_OUTLINE.md](COURSE_OUTLINE.md).
 
 ## What this repository is
@@ -17,7 +18,7 @@ This is **course content**, not an application. It backs a 4-day YouTube series 
 
 Two consequences that shape almost every edit:
 
-- **There is deliberately no `.github/workflows/` directory here.** The files in [day-01/workflows/](day-01/workflows/) are *teaching artifacts* that learners copy into their own practice repo. Never move or copy them into `.github/workflows/` — that would make this repo run 15 demo workflows against itself. Nothing in this repo is meant to execute on push.
+- **There is deliberately no `.github/workflows/` directory here.** The files in [day-01/workflows/](day-01/workflows/) are *teaching artifacts* that learners copy into their own practice repo. Never move or copy them into `.github/workflows/` — that would make this repo run 49 demo workflows against itself. Nothing in this repo is meant to execute on push.
 - **The course promises "nothing to generate."** `sample-app/package-lock.json` is committed on purpose so learners never run `npm install` locally. Don't delete it, don't add dependencies to `sample-app` (it is zero-dependency by design so a demo can't break on a missing package).
 
 ## Architecture: coupled artifacts that must stay consistent
@@ -34,9 +35,9 @@ The course's teaching content is spread across a few files that must agree with 
 
 The root README references workflows by relative markdown link (e.g. `[`11-setup-node.yml`](day-01/workflows/11-setup-node.yml)`), so **renaming or renumbering a file means fixing those links**. Insert `04a` style names rather than renumbering.
 
-**The numeric prefix is the teaching order.** Numbers run continuously across the whole course: `01`–`11` = Day 1, `12`–`19` = Day 2, `20`–`34` = Day 3, `35`+ = Day 4 (advanced; not built yet). Each file sits under the folder for the day that teaches it: `day-01/workflows/` (`01`–`11`), `day-02/workflows/` (`12`–`19`), `day-03/workflows/` (`20`–`34`), and `day-04/workflows/` (`35`+, once built). The numeric prefix, not the folder, remains the source of truth for order — always check the number against the mapping above and against the README.
+**The numeric prefix is the teaching order.** Numbers run continuously across the whole course: `01`–`11` = Day 1, `12`–`19` = Day 2, `20`–`29` = Day 3, `30`–`49` = Day 4. Each file sits under the folder for the day that teaches it: `day-01/workflows/`, `day-02/workflows/`, `day-03/workflows/`, `day-04/workflows/`. The numeric prefix, not the folder, remains the source of truth for order — always check the number against the mapping above and against the README.
 
-Day 1 (§1–7) and Day 2 (§8–15, through status functions) are written in the README. Day 3 (job outputs onward, files `20`–`34`) has its workflow files built but no teaching script yet.
+All four days are written in the README: Day 1 §1–7, Day 2 §8–15 (through status functions), Day 3 §16–24 (job outputs → composite actions), Day 4 §25–43 (token permissions → the hardened capstone). **README section numbers are continuous 1–43 and do not restart per day** — the day headings are the only thing that marks a boundary, so moving a topic between days means moving the `# Day N` heading, not renumbering sections.
 
 ## Conventions for workflow demo files
 
@@ -85,15 +86,15 @@ Day 2 workflows use `npm ci` rather than Day 1's `npm install` (deterministic, a
 
 Demos are recorded against a **throwaway practice repo**, not this one: one workflow file is created in the browser, run, watched in the Actions tab, then deleted before the next.
 
-Day 3 breaks that one-file-at-a-time rule in three places, and the READMEs call out the setup explicitly:
+Day 3 breaks that one-file-at-a-time rule in two places, and the READMEs call out the setup explicitly:
 
 - **28** needs **27** present at the same time (caller + callee).
 - **29** needs `.github/actions/node-ci-setup/action.yml` copied alongside it.
-- **34** (capstone) calls **27**, and needs the `staging` / `production` environments created in repo settings first.
 
 Day 4 adds more of these, and several files are **intentionally not runnable in a vanilla repo** (they teach a concept that needs external infra):
 
+- **34** (the production capstone) calls **27** — a *Day 3* file — so it must be copied alongside, and it needs the `staging` / `production` environments created in repo settings first (see **31**).
 - **45** needs `.github/actions/greet-js/` (action.yml + index.js) copied alongside it; **46** needs `.github/actions/greet-docker/` (action.yml + Dockerfile + entrypoint.sh).
 - **39** / **49** (OIDC) need a cloud IAM role trusting the repo's OIDC `sub` claim, ARN in `vars.AWS_ROLE_ARN`; **40** (self-hosted) sits Queued unless a matching runner is online. These "won't just run" states are deliberate teaching points — check the header before "fixing" them. (**44** / **49** build `sample-app/Dockerfile`, which *is* shipped — those need no extra setup beyond the folder.)
 
-The course also depends on repo-level state a learner must create by hand: the `MY_API_KEY` secret (Day 2, file 14), and the two environments with a required reviewer on `production` (Day 3, files 31 and 34).
+The course also depends on repo-level state a learner must create by hand: the `MY_API_KEY` secret (Day 2, file 14), and the two environments with a required reviewer on `production` (Day 4, files 31 and 34).

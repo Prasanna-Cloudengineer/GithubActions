@@ -95,9 +95,9 @@ By the end of the course you will be able to:
 
 ---
 
-## Day 3 — Real pipelines: matrix, caching, artifacts, reuse & gated deploys
+## Day 3 — Real pipelines: matrix, caching, artifacts & reuse
 
-**Goal:** Turn the multi-job workflow into a production-grade pipeline — pass data between jobs, parallelize with a matrix, speed it up with caching, connect jobs with artifacts, factor out reusable building blocks, lock down permissions, and gate the deploy behind a human approval.
+**Goal:** Make the multi-job workflow fast and maintainable — pass data between jobs, parallelize with a matrix, speed it up with caching, connect jobs with artifacts, and factor out reusable building blocks. (Locking it down and gating the deploy is where Day 4 starts.)
 
 ### Topics
 
@@ -114,44 +114,45 @@ By the end of the course you will be able to:
    1. **Reusable workflows** (`on: workflow_call`, typed `inputs`/`secrets`/`outputs`) — reuse an entire job.
    2. **Composite actions** — bundle multiple steps into one local/shared action.
    3. Decision guide: workflow-level reuse vs. step-level reuse (custom JavaScript/Docker actions are built later in the course).
-5. **Environments, secrets, and token permissions**
-   1. **`GITHUB_TOKEN` permissions**: the least-privilege model, the `permissions:` block (it's not additive), and setting read-only by default then elevating per-job.
-   2. **Environments** and environment-scoped secrets/variables (e.g., `staging`, `production`); repository vs. environment vs. organization secret precedence.
-   3. **Deployment protection rules**: required reviewers/approvals, wait timers, and allowed branches — pausing a deploy until a human clicks Approve.
-6. **Concurrency and efficiency**
-   1. `concurrency` groups and `cancel-in-progress` (e.g., cancel stale PR builds; serialize deploys).
-   2. Timeouts, `continue-on-error` (`outcome` vs. `conclusion`), and keeping pipelines fast and cheap.
 
-> **Hands-on:** Build a multi-stage **build → test → deploy** pipeline. Run tests across a **matrix** of Node versions and OSes, cache dependencies, upload a build artifact and consume it in a later job, factor the test job into a **reusable workflow**, gate the deploy behind a `production` **environment** with a required reviewer, and lock down `GITHUB_TOKEN` with an explicit least-privilege `permissions:` block.
+> **Hands-on:** Run tests across a **matrix** of Node versions and OSes, cache dependencies, upload a build artifact and consume it in a later job, factor the test job into a **reusable workflow**, and collapse repeated steps into a **composite action**.
 
 ---
 
-## Day 4 — Advanced: Security, OIDC, Custom Actions & Publishing
+## Day 4 — Gated deploys, Security, OIDC, Custom Actions & Publishing
 
-**Goal:** Harden and scale your pipelines the way production teams do — secure supply chain, keyless cloud auth, custom tooling, container publishing, and gated deployments — culminating in a full capstone.
+**Goal:** Finish the production pipeline — least-privilege tokens, approvals, concurrency and timeouts — then harden and scale it the way production teams do: secure supply chain, keyless cloud auth, custom tooling and container publishing, culminating in a full hardened capstone.
 
 ### Topics
 
-1. **Security hardening (supply chain)**
+1. **Environments, secrets, and token permissions**
+   1. **`GITHUB_TOKEN` permissions**: the least-privilege model, the `permissions:` block (it's not additive), and setting read-only by default then elevating per-job.
+   2. **Environments** and environment-scoped secrets/variables (e.g., `staging`, `production`); repository vs. environment vs. organization secret precedence.
+   3. **Deployment protection rules**: required reviewers/approvals, wait timers, and allowed branches — pausing a deploy until a human clicks Approve.
+2. **Concurrency and efficiency**
+   1. `concurrency` groups and `cancel-in-progress` (e.g., cancel stale PR builds; serialize deploys).
+   2. Timeouts, `continue-on-error` (`outcome` vs. `conclusion`), and keeping pipelines fast and cheap.
+   3. **Capstone (mid-day):** the full **build → test → deploy** pipeline — matrix tests via a reusable workflow, build once, deploy the same artifact to `staging` then a gated `production`.
+3. **Security hardening (supply chain)**
    1. **Pin actions to a full commit SHA**, not a tag/branch — why (the 2025 `tj-actions/changed-files` compromise) and how; using **Dependabot** to bump pinned SHAs.
    2. **Immutable actions / immutable releases** and org-level **SHA-pinning enforcement & action-blocking policies** (available since Aug 2025) that fail unpinned workflows.
    3. Reconfirming **least-privilege `GITHUB_TOKEN`** and safe secret handling; risks of `pull_request_target` and untrusted PR code (poisoned pipeline execution).
    4. **Secret scanning** / push protection and **CodeQL** code scanning as part of the pipeline.
-2. **OIDC — keyless cloud authentication**
+4. **OIDC — keyless cloud authentication**
    1. Why long-lived cloud secrets are risky; how **OpenID Connect (OIDC)** issues **short-lived, scoped tokens** at runtime.
    2. Configuring a cloud provider to trust GitHub's OIDC provider (AWS role / Azure / GCP) and the `id-token: write` permission.
    3. Scoping trust with subject claims (repo, branch, environment).
-3. **Self-hosted & scaled runners**
+5. **Self-hosted & scaled runners**
    1. When to use **self-hosted runners** (custom hardware, private network, licensed tools) and their security caveats (avoid on public repos).
    2. Runner groups and a note on modern scaling (Actions Runner Controller / runner scale sets).
-4. **Advanced triggers & orchestration**
+6. **Advanced triggers & orchestration**
    1. `workflow_run` (chain workflows) and `repository_dispatch` (external events).
    2. **Reusable workflow chaining** and passing secrets/outputs between them.
    3. **Monorepo strategies**: path filters, per-path pipelines, and change detection.
-5. **Advanced deployments** *(builds on the environments introduced earlier)*
+7. **Advanced deployments** *(builds on the environments introduced earlier)*
    1. Deployment history on the Environments page, and rollbacks / re-runs of a deployment.
    2. Multi-environment promotion patterns and custom deployment-protection integrations.
-6. **Building and publishing**
+8. **Building and publishing**
    1. Build and push a **Docker image to GHCR** (GitHub Container Registry) with proper `packages: write` permission.
    2. Author, tag/version, and publish your **own custom action** — **JavaScript** vs. **Docker container** actions, when to reach for each, following semantic version tags + moving major tag.
    3. Debugging: re-run with debug logging, step debugging, and running workflows locally with **`act`**.
@@ -167,17 +168,17 @@ This document is the master blueprint. The teaching script for the recorded vide
 | Day | Teaching content | Workflow files | YouTube metadata | Status |
 |-----|------------------|----------------|------------------|--------|
 | Day 1 | [`README.md`](README.md) §1–7 | [`day-01/workflows/`](day-01/workflows/) `01`–`11` | [`youtube/day01_youtube.md`](youtube/day01_youtube.md) | ✅ Recorded |
-| Day 2 | [`README.md`](README.md) §8–15 | [`day-02/workflows/`](day-02/workflows/) `12`–`19` | [`youtube/day02_youtube.md`](youtube/day02_youtube.md) | 🎬 Recording |
-| Day 3 | [`README.md`](README.md) §16–29 | [`day-03/workflows/`](day-03/workflows/) `20`–`34` + [`day-03/actions/`](day-03/actions/) | [`youtube/day03_youtube.md`](youtube/day03_youtube.md) | 📝 Script ready, recording pending |
-| Day 4 | [`README.md`](README.md) §30–43 | [`day-04/workflows/`](day-04/workflows/) `35`–`49` + [`day-04/actions/`](day-04/actions/) | [`youtube/day04_youtube.md`](youtube/day04_youtube.md) | 📝 Script ready, recording pending |
+| Day 2 | [`README.md`](README.md) §8–15 | [`day-02/workflows/`](day-02/workflows/) `12`–`19` | [`youtube/day02_youtube.md`](youtube/day02_youtube.md) | ✅ Recorded |
+| Day 3 | [`README.md`](README.md) §16–24 | [`day-03/workflows/`](day-03/workflows/) `20`–`29` + [`day-03/actions/`](day-03/actions/) | [`youtube/day03_youtube.md`](youtube/day03_youtube.md) | ✅ Recorded (through the composite action, `29`) |
+| Day 4 | [`README.md`](README.md) §25–43 | [`day-04/workflows/`](day-04/workflows/) `30`–`49` + [`day-04/actions/`](day-04/actions/) | [`youtube/day04_youtube.md`](youtube/day04_youtube.md) | 📝 Script ready, recording pending |
 
-**Workflow files are numbered continuously across the whole course** (`01`–`11` = Day 1, `12`–`19` = Day 2, `20`–`34` = Day 3, `35`–`49` = Day 4) — the number is the teaching order. Each file lives under the folder for the day that teaches it (`day-01/` … `day-04/`).
+**Workflow files are numbered continuously across the whole course** (`01`–`11` = Day 1, `12`–`19` = Day 2, `20`–`29` = Day 3, `30`–`49` = Day 4) — the number is the teaching order. Each file lives under the folder for the day that teaches it (`day-01/` … `day-04/`).
 
-> ⚠️ **The course grew from a 3-day plan into 4 days as the videos were recorded.** The original blueprint packed all of "intermediate real pipelines" into one day; in practice it split across Day 2 (orchestration) and Day 3 (matrix → reuse → gated deploys), and the advanced material became its own Day 4.
+> ⚠️ **The course grew from a 3-day plan into 4 days, and the day boundaries moved again during recording.** The original blueprint packed all of "intermediate real pipelines" into one day; in practice it split across Day 2 (orchestration) and Day 3 (matrix → caching → artifacts → reuse), and everything from token permissions onward became Day 4.
 > - Day 1 stopped after `actions/setup-node`, so variables / contexts / secrets and the CI capstone (`12`–`15`) are taught at the **start of Day 2**.
-> - Day 2 runs through **status functions (`19`)**. **Job outputs (`20`) through the pipeline capstone (`34`) are Day 3.**
-> - Everything **advanced** — SHA pinning, CodeQL/secret scanning, OIDC, custom actions, GHCR, self-hosted runners — is **Day 4** (`35`–`49`).
+> - Day 2 runs through **status functions (`19`)**. **Job outputs (`20`) through the composite action (`29`) are Day 3** — that is where the recorded Day 3 video ends.
+> - Day 4 therefore opens with the material the blueprint had put in Day 3: **`GITHUB_TOKEN` permissions (`30`), environments & approvals (`31`), concurrency (`32`), timeouts (`33`) and the pipeline capstone (`34`)** — then continues into the advanced set (SHA pinning, CodeQL/secret scanning, OIDC, custom actions, GHCR, self-hosted runners) through `49`. It is the longest day; splitting it into `4a`/`4b` is a reasonable option when recording.
 >
 > The single root [`README.md`](README.md) is the source of truth for what is actually taught and in what order; the per-topic lists above are the blueprint.
 
-**Next:** all four days' teaching content and workflow files are written (README §1–43, workflows `01`–`49`, `youtube/day0{1..4}_youtube.md`). Remaining work is **recording** Days 3 and 4 and refining as the videos are shot.
+**Next:** all four days' teaching content and workflow files are written (README §1–43, workflows `01`–`49`, `youtube/day0{1..4}_youtube.md`). Remaining work is **recording** Day 4 (`30`–`49`) and refining as the video is shot.

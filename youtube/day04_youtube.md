@@ -4,30 +4,32 @@
 
 ## Video Title
 
-GitHub Actions Full Course — Security, SHA Pinning, OIDC, Custom Actions & Publishing to GHCR | Day 4
+GitHub Actions Full Course — Permissions, Approvals, SHA Pinning, OIDC, Custom Actions & GHCR | Day 4
 
 ---
 
 ## Thumbnail
 
-**Main text (large, bold):** `Harden It`
+**Main text (large, bold):** `Gate It. Harden It.`
 **Sub text:** `Day 4 — GitHub Actions Zero to Hero`
 **Suggested visual elements:**
 - Dark GitHub background (#0D1117) with GitHub Actions blue accent (#2088FF)
-- A **padlock + shield** on the right over a pipeline graph, with a green "OIDC — no secrets" pill
+- A **padlock + shield** on the right over a pipeline graph whose last box carries a yellow ⏸️ "Waiting for approval" badge, plus a green "OIDC — no secrets" pill
 - A `@v1 → @<sha>` **pin** badge on the left (tag being replaced by a commit hash)
-- `SHA · CODEQL · OIDC · GHCR` badge in a bright pill
+- `APPROVAL · SHA · OIDC · GHCR` badge in a bright pill
 - Channel name: LearnWithMithran (bottom corner)
 
-**Key message to convey at a glance:** Take a working pipeline and make it production-secure — pinned supply chain, keyless cloud auth, your own actions, and a published image.
+**Key message to convey at a glance:** Finish the pipeline and make it production-secure — least-privilege tokens, a human approval gate, pinned supply chain, keyless cloud auth, and your own published actions and images.
 
 ---
 
 ## Description
 
-*Welcome back to Learn With Mithran! In the previous session you shipped a real build → test → deploy pipeline with approvals. Today we harden and scale it the way production security teams do.*
+*Welcome back to Learn With Mithran! In the previous session you made your pipeline fast and maintainable — matrix builds, caching, artifacts, reusable workflows and composite actions. Today we finish it and then harden it the way production security teams do.*
 
-We start with **supply-chain security** — why the 2025 `tj-actions/changed-files` compromise happened and how pinning actions to a full commit **SHA** (kept fresh by Dependabot) stops it. Then we add **CodeQL** code scanning and **secret scanning** with push protection, and defuse the most dangerous Actions misconfiguration of all: running untrusted pull-request code with `pull_request_target`. Next we go keyless with **OIDC** — authenticating to AWS/Azure/GCP with short-lived tokens and **no stored cloud secrets** — cover **self-hosted runners**, and chain work across workflows and systems with `workflow_run` and `repository_dispatch`. Finally we build: a **Docker image pushed to GHCR**, your **own JavaScript and Docker container actions**, versioning and publishing an action with semver + a moving major tag, debugging tricks (and running workflows locally with `act`), all brought together in a fully **hardened capstone pipeline**. 🚀
+First we lock the pipeline down: least-privilege **`GITHUB_TOKEN` permissions** (and why the `permissions:` block is not additive), **environments** with scoped secrets and secret precedence, **required reviewers** that pause a deploy until a human clicks Approve, **`concurrency`** to cancel stale builds or serialise deploys, and **timeouts** with `continue-on-error` — all brought together in a full **build → test → deploy** capstone with a gated production environment.
+
+Then we harden it. We start with **supply-chain security** — why the 2025 `tj-actions/changed-files` compromise happened and how pinning actions to a full commit **SHA** (kept fresh by Dependabot) stops it. Then we add **CodeQL** code scanning and **secret scanning** with push protection, and defuse the most dangerous Actions misconfiguration of all: running untrusted pull-request code with `pull_request_target`. Next we go keyless with **OIDC** — authenticating to AWS/Azure/GCP with short-lived tokens and **no stored cloud secrets** — cover **self-hosted runners**, and chain work across workflows and systems with `workflow_run` and `repository_dispatch`. Finally we build: a **Docker image pushed to GHCR**, your **own JavaScript and Docker container actions**, versioning and publishing an action with semver + a moving major tag, debugging tricks (and running workflows locally with `act`), all brought together in a fully **hardened capstone pipeline**. 🚀
 
 **Still 100% browser-based — no local setup, nothing to install.** Every workflow file used in this video is prebuilt in the GitHub repo below. Copy, commit, watch it run.
 
@@ -53,6 +55,12 @@ Greens Technologys, Perumbakkam (https://maps.app.goo.gl/u34U3rXu8zPFfQh5A)
 
 🎯 *Topics Covered*:
 
+🔹 `GITHUB_TOKEN` and least-privilege `permissions` — why the block is not additive
+🔹 Environments — scoped secrets, secret precedence, and deployment URLs
+🔹 Required reviewers — pausing a deploy until a human clicks Approve
+🔹 `concurrency` — cancelling stale PR builds vs serialising deploys
+🔹 `timeout-minutes` and `continue-on-error` — plus `outcome` vs `conclusion`
+🔹 Production capstone — build → test → deploy with approval, artifacts and least privilege
 🔹 Supply-chain security — pinning actions to a full commit SHA, and why tags are dangerous
 🔹 The 2025 `tj-actions/changed-files` compromise — what happened and the lesson
 🔹 Dependabot for GitHub Actions — keeping SHA pins fresh automatically
@@ -74,42 +82,49 @@ Greens Technologys, Perumbakkam (https://maps.app.goo.gl/u34U3rXu8zPFfQh5A)
 
 📌 *Who Is This Video For:*
 
-💻 Anyone who has a working pipeline and now needs to make it secure
+💻 Anyone who has a working pipeline and now needs approvals and security on it
 🧑‍🎓 Students and freshers preparing for DevOps, cloud and security job roles
 🛠️ Developers responsible for CI/CD supply-chain security
 🚀 DevOps, SRE and platform engineers hardening delivery pipelines
+🏢 Teams that need gated deploys and least-privilege tokens before they can ship
 🔐 Teams moving off long-lived cloud keys toward OIDC
 🏗️ Anyone who wants to build and publish their own GitHub Actions
 
 🔍 *Chapters:*
-0:00 Intro — From Working to Hardened
+0:00 Intro — From Working to Gated and Hardened
 3:00 Recap of the Previous Session + Today's Goal
-7:00 Supply-Chain Security — Pinning Actions to a SHA
-20:00 The tj-actions Compromise & Dependabot
-30:00 CodeQL Code Scanning
-41:00 Secret Scanning & Push Protection
-50:00 Untrusted PRs & pull_request_target
-1:03:00 OIDC — Keyless Cloud Authentication
-1:18:00 Scoping Trust with the sub Claim
-1:26:00 Self-hosted & Scaled Runners
-1:35:00 workflow_run & repository_dispatch
-1:47:00 Monorepo Change Detection
-1:55:00 Build & Push a Docker Image to GHCR
-2:08:00 Custom JavaScript Actions
-2:22:00 Custom Docker Container Actions
-2:33:00 Publishing & Versioning Your Own Action
-2:43:00 Debugging & Running Locally with act
-2:52:00 🚀 The Hardened Capstone Pipeline
-3:12:00 Course Wrap-up & Where to Go Next
+7:00 GITHUB_TOKEN and Least-Privilege `permissions`
+19:00 Environments, Scoped Secrets and Secret Precedence
+29:00 Deployment Gates — Requiring a Human Approval
+39:00 Concurrency — Cancel Stale Builds, Serialise Deploys
+49:00 Timeouts and continue-on-error (outcome vs conclusion)
+57:00 🚀 Capstone — The Full Build → Test → Deploy Pipeline
+1:17:00 Supply-Chain Security — Pinning Actions to a SHA
+1:30:00 The tj-actions Compromise & Dependabot
+1:40:00 CodeQL Code Scanning
+1:51:00 Secret Scanning & Push Protection
+2:00:00 Untrusted PRs & pull_request_target
+2:13:00 OIDC — Keyless Cloud Authentication
+2:28:00 Scoping Trust with the sub Claim
+2:36:00 Self-hosted & Scaled Runners
+2:45:00 workflow_run & repository_dispatch
+2:57:00 Monorepo Change Detection
+3:05:00 Build & Push a Docker Image to GHCR
+3:18:00 Custom JavaScript Actions
+3:32:00 Custom Docker Container Actions
+3:43:00 Publishing & Versioning Your Own Action
+3:53:00 Debugging & Running Locally with act
+4:02:00 🚀 The Hardened Capstone Pipeline
+4:22:00 Course Wrap-up & Where to Go Next
 
-⏭️ *You've completed the series:* you can now build secure, production-grade CI/CD pipelines end to end — pinned supply chain, code and secret scanning, keyless OIDC cloud deploys, your own published actions, and a fully hardened capstone. Take it to your own project next.
+⏭️ *You've completed the series:* you can now build secure, production-grade CI/CD pipelines end to end — least-privilege tokens, gated deployments with human approval, a pinned supply chain, code and secret scanning, keyless OIDC cloud deploys, your own published actions, and a fully hardened capstone. Take it to your own project next.
 
 👍 If this video helps you, like, subscribe, and turn on notifications for more hands-on content on GitHub Actions, DevOps, Azure, AWS, Linux, and Python.
 
-#GitHubActions #CICD #DevOps #DevSecOps #GitHubActionsTutorial #SupplyChainSecurity #SHApinning #OIDC #CodeQL #SecretScanning #GHCR #CustomActions #DockerAction #JavaScriptAction #ContinuousIntegration #ContinuousDeployment #GitHub #WorkflowAutomation #LearnWithMithran #GitHubActionsCourse #GitHubWorkflow #DevOpsTutorial #KeylessAuth #GreensTechnologies #DevOpsTraining
+#GitHubActions #CICD #DevOps #DevSecOps #GitHubActionsTutorial #DeploymentApproval #LeastPrivilege #GitHubEnvironments #SupplyChainSecurity #SHApinning #OIDC #CodeQL #SecretScanning #GHCR #CustomActions #DockerAction #JavaScriptAction #ContinuousIntegration #ContinuousDeployment #GitHub #WorkflowAutomation #LearnWithMithran #GitHubActionsCourse #GitHubWorkflow #DevOpsTutorial #KeylessAuth #GreensTechnologies #DevOpsTraining
 
 ---
 
 ## Tags
 
-github actions, github actions tutorial, github actions security, sha pinning github actions, pin actions to sha, tj-actions compromise, dependabot github actions, codeql, github code scanning, secret scanning, push protection, pull_request_target, poisoned pipeline execution, github actions oidc, keyless authentication, oidc aws github actions, id-token write, self-hosted runners, workflow_run, repository_dispatch, monorepo github actions, docker build push ghcr, github container registry, custom github action, javascript action, docker container action, publish github action, moving major tag, act nektos, devsecops, ci cd security, github actions full course, github actions course 2026, learnwithmithran, greens technologies
+github actions, github actions tutorial, github actions permissions, github_token permissions, least privilege github actions, github environments, deployment approval github actions, required reviewers, github actions concurrency, cancel in progress, github actions timeout, continue-on-error, outcome vs conclusion, build test deploy pipeline, github actions security, sha pinning github actions, pin actions to sha, tj-actions compromise, dependabot github actions, codeql, github code scanning, secret scanning, push protection, pull_request_target, poisoned pipeline execution, github actions oidc, keyless authentication, oidc aws github actions, id-token write, self-hosted runners, workflow_run, repository_dispatch, monorepo github actions, docker build push ghcr, github container registry, custom github action, javascript action, docker container action, publish github action, moving major tag, act nektos, devsecops, ci cd security, github actions full course, github actions course 2026, learnwithmithran, greens technologies

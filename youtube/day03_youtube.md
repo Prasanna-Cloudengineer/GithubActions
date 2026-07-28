@@ -4,30 +4,30 @@
 
 ## Video Title
 
-GitHub Actions Full Course — Matrix, Caching, Artifacts, Reusable Workflows, Permissions & Gated Deploys | Day 3
+GitHub Actions Full Course — Job Outputs, Matrix Builds, Caching, Artifacts, Reusable Workflows & Composite Actions | Day 3
 
 ---
 
 ## Thumbnail
 
-**Main text (large, bold):** `Build → Test → Deploy`
+**Main text (large, bold):** `Matrix · Cache · Reuse`
 **Sub text:** `Day 3 — GitHub Actions Zero to Hero`
 **Suggested visual elements:**
 - Dark GitHub background (#0D1117) with GitHub Actions blue accent (#2088FF)
-- A **pipeline graph** on the right: connected job boxes with green ticks, the last showing a yellow ⏸️ "Waiting for approval" badge
+- A **fan-out graph** on the right: one job box branching into several parallel job boxes with green ticks
 - A 3×3 **matrix grid** icon on the left (Ubuntu / Windows / macOS × Node 20 / 22 / 24)
-- `MATRIX · CACHE · ARTIFACTS · APPROVAL` badge in a bright pill
+- `MATRIX · CACHE · ARTIFACTS · REUSE` badge in a bright pill
 - Channel name: LearnWithMithran (bottom corner)
 
-**Key message to convey at a glance:** A real pipeline — parallel, cached, reusable, locked down, and gated by a human before production.
+**Key message to convey at a glance:** A real pipeline — parallel across versions, cached, sharing files between jobs, and with the copy-pasted YAML factored out.
 
 ---
 
 ## Description
 
-*Welcome back to Learn With Mithran! In the previous session you connected jobs into a multi-job pipeline with `needs` and `if`. Today we make it production-grade — the kind of pipeline a real team actually ships.*
+*Welcome back to Learn With Mithran! In the previous session you connected jobs into a multi-job pipeline with `needs` and `if`. Today we make that pipeline fast, parallel and maintainable — the way a real team actually writes it.*
 
-We start by passing data between jobs with **outputs** and `$GITHUB_OUTPUT`, then test across a **matrix** of Node versions and operating systems (`include`, `exclude`, `fail-fast`, `max-parallel`). We speed everything up with **dependency caching** and share real files between jobs using **artifacts** — including the immutable-artifact trap that breaks migrated matrix workflows, and how to merge reports back together. Then we stop copy-pasting YAML forever with **reusable workflows** and **composite actions**, and learn exactly which one to reach for. We finish by hardening the pipeline: locking down `GITHUB_TOKEN` with least-privilege **permissions**, gating production behind a **required human approval** using environments, and controlling cost and races with **concurrency** and **timeouts** — all brought together in a full **build → test → deploy** capstone. 🚀
+We start by passing data between jobs with **outputs** and `$GITHUB_OUTPUT`, then test across a **matrix** of Node versions and operating systems (`include`, `exclude`, `fail-fast`, `max-parallel`). We speed everything up with **dependency caching** — cache keys, `hashFiles()`, `restore-keys` and the immutable-key bug that silently freezes your cache forever — and share real files between jobs using **artifacts**, including the immutable-artifact trap that breaks migrated matrix workflows and how to merge reports back together. We finish by killing copy-pasted YAML for good with **reusable workflows** (`workflow_call` with typed inputs, secrets and outputs) and **composite actions**, and a clear decision guide for which one to reach for. 🚀
 
 **Still 100% browser-based — no local setup, nothing to install.** Every workflow file used in this video is prebuilt in the GitHub repo below. Copy, commit, watch it run.
 
@@ -67,12 +67,6 @@ Greens Technologys, Perumbakkam (https://maps.app.goo.gl/u34U3rXu8zPFfQh5A)
 🔹 Reusable workflows — `workflow_call`, typed inputs, secrets and outputs
 🔹 Composite actions — bundling steps, the mandatory `shell:`, and the checkout chicken-and-egg
 🔹 Reusable workflow vs composite action vs custom action — the decision guide
-🔹 `GITHUB_TOKEN` and least-privilege `permissions` — why the block is not additive
-🔹 Environments — scoped secrets, secret precedence, and deployment URLs
-🔹 Required reviewers — pausing a deploy until a human clicks Approve
-🔹 `concurrency` — cancelling stale PR builds vs serialising deploys
-🔹 `timeout-minutes` and `continue-on-error` — plus `outcome` vs `conclusion`
-🔹 Full capstone — build → test → deploy with approval, artifacts and least privilege
 
 📌 *Who Is This Video For:*
 
@@ -81,10 +75,10 @@ Greens Technologys, Perumbakkam (https://maps.app.goo.gl/u34U3rXu8zPFfQh5A)
 🛠️ Developers whose CI is slow, flaky, or full of copy-pasted YAML
 🚀 DevOps, SRE and platform engineers standardizing builds and deployments
 🔁 Anyone migrating multi-stage pipelines from Jenkins, GitLab CI or CircleCI
-🏢 Teams that need approvals and least-privilege tokens before they can ship
+🏢 Teams maintaining the same CI YAML across many repositories
 
 🔍 *Chapters:*
-0:00 Intro — From a Multi-Job Pipeline to Production-Grade
+0:00 Intro — From a Multi-Job Pipeline to a Fast, Reusable One
 3:00 Recap of the Previous Session + What We're Building Today
 7:00 Job Outputs — Passing Data Between Jobs
 19:00 Matrix Builds — One Job, Many Versions
@@ -98,23 +92,17 @@ Greens Technologys, Perumbakkam (https://maps.app.goo.gl/u34U3rXu8zPFfQh5A)
 1:43:00 Calling a Reusable Workflow (and Matrixing It)
 1:53:00 Composite Actions — Bundling Repeated Steps
 2:05:00 Which One Do I Use? The Reuse Decision Guide
-2:11:00 GITHUB_TOKEN and Least-Privilege `permissions`
-2:23:00 Environments, Scoped Secrets and Secret Precedence
-2:33:00 Deployment Gates — Requiring a Human Approval
-2:43:00 Concurrency — Cancel Stale Builds, Serialise Deploys
-2:53:00 Timeouts and continue-on-error (outcome vs conclusion)
-3:01:00 🚀 Capstone — The Full Build → Test → Deploy Pipeline
-3:21:00 Day 3 Cheat Sheet & Recap
-3:27:00 What's Next — Security, OIDC & Custom Actions
+2:11:00 Day 3 Cheat Sheet & Recap
+2:17:00 What's Next — Permissions, Approvals & Security
 
-⏭️ *Coming next:* supply-chain security and pinning actions to a commit SHA, OIDC keyless authentication to AWS/Azure/GCP, building and publishing your own JavaScript and Docker actions, publishing images to GHCR, self-hosted runners, `workflow_run` and monorepo strategies, CodeQL and secret scanning, and the full hardened capstone pipeline.
+⏭️ *Coming next:* locking down `GITHUB_TOKEN` with least-privilege `permissions`, environments with scoped secrets and **required human approvals**, `concurrency` and timeouts, the full **build → test → deploy** capstone — then supply-chain security and pinning actions to a commit SHA, CodeQL and secret scanning, OIDC keyless authentication to AWS/Azure/GCP, self-hosted runners, `workflow_run` and monorepo strategies, publishing images to GHCR, and building and publishing your own JavaScript and Docker actions.
 
 👍 If this video helps you, like, subscribe, and turn on notifications for more hands-on content on GitHub Actions, DevOps, Azure, AWS, Linux, and Python.
 
-#GitHubActions #CICD #DevOps #GitHubActionsTutorial #CIPipeline #MatrixBuild #ReusableWorkflows #CompositeActions #GitHubArtifacts #DependencyCaching #ContinuousIntegration #ContinuousDeployment #GitHub #DevOpsForBeginners #WorkflowAutomation #LearnWithMithran #GitHubActionsCourse #BuildAutomation #GitHubWorkflow #DevOpsTutorial #DeploymentApproval #LeastPrivilege #GitHubEnvironments #GreensTechnologies #DevOpsTraining #JenkinsAlternative
+#GitHubActions #CICD #DevOps #GitHubActionsTutorial #CIPipeline #MatrixBuild #ReusableWorkflows #CompositeActions #GitHubArtifacts #DependencyCaching #JobOutputs #ContinuousIntegration #ContinuousDeployment #GitHub #DevOpsForBeginners #WorkflowAutomation #LearnWithMithran #GitHubActionsCourse #BuildAutomation #GitHubWorkflow #DevOpsTutorial #WorkflowCall #GreensTechnologies #DevOpsTraining #JenkinsAlternative
 
 ---
 
 ## Tags
 
-github actions, github actions tutorial, github actions matrix, github actions matrix build, github actions cache, github actions artifacts, upload artifact v4, download artifact v4, github actions reusable workflow, workflow_call, composite action github actions, github actions needs, github actions job outputs, github_output, github actions concurrency, cancel in progress, github actions permissions, github_token permissions, least privilege github actions, github environments, deployment approval github actions, required reviewers, github actions timeout, continue-on-error, outcome vs conclusion, ci cd pipeline tutorial, multi stage pipeline, build test deploy pipeline, devops tutorial, devops for beginners, github actions full course, github actions course 2026, learnwithmithran, greens technologies
+github actions, github actions tutorial, github actions matrix, github actions matrix build, fail-fast, max-parallel, github actions cache, hashfiles, restore-keys, github actions artifacts, upload artifact v7, download artifact v8, upload-artifact merge, github actions reusable workflow, workflow_call, composite action github actions, github actions needs, github actions job outputs, github_output, cache vs artifact, ci cd pipeline tutorial, multi stage pipeline, build test deploy pipeline, devops tutorial, devops for beginners, github actions full course, github actions course 2026, learnwithmithran, greens technologies

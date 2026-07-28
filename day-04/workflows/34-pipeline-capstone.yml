@@ -1,6 +1,8 @@
 # 34 - 🚀 CAPSTONE: a real build -> test -> deploy pipeline
 #
-# Everything from today, in one file that a working team would actually ship.
+# Everything so far, in one file that a working team would actually ship:
+# Day 3's building blocks plus the permissions/environments/timeouts you just
+# learned.
 #
 #   ✅ least-privilege `permissions` (30)     ✅ matrix testing (21-23)
 #   ✅ `concurrency` control (32)             ✅ dependency caching (24)
@@ -14,7 +16,8 @@
 #                            you have it. A Day 1 copy has no `build` script
 #                            and the build job fails: Missing script: "build")
 #     .github/workflows/34-pipeline-capstone.yml         (this file)
-#     .github/workflows/27-reusable-workflow-callee.yml  (the test job it calls)
+#     .github/workflows/27-reusable-workflow-callee.yml  (the test job it calls
+#                            — a Day 3 file, in day-03/workflows/)
 #   Then create the `staging` and `production` environments described in
 #   file 31, with a required reviewer on `production`.
 #

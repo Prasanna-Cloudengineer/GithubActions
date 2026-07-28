@@ -39,7 +39,7 @@ Everything is taught against the **current (2026) GitHub Actions platform** — 
 14. [`if` — conditional jobs and steps](#14--if--conditional-jobs-and-steps)
 15. [Status functions](#15--status-functions)
 
-**Day 3 — Production pipelines: reuse, security & gated deploys**
+**Day 3 — Real pipelines: matrix, caching, artifacts & reuse**
 
 16. [Job outputs — passing values between jobs](#16--job-outputs--passing-values-between-jobs)
 17. [Matrix builds — one job, many versions](#17--matrix-builds--one-job-many-versions)
@@ -50,14 +50,14 @@ Everything is taught against the **current (2026) GitHub Actions platform** — 
 22. [Matrix artifacts & merging](#22--matrix-artifacts--merging)
 23. [Reusable workflows — reuse a whole job](#23--reusable-workflows--reuse-a-whole-job)
 24. [Composite actions — reuse a few steps](#24--composite-actions--reuse-a-few-steps)
+
+**Day 4 — Gated deploys, security, OIDC, custom actions & publishing**
+
 25. [`GITHUB_TOKEN` & least-privilege `permissions`](#25--github_token--least-privilege-permissions)
 26. [Environments & approvals](#26--environments--approvals)
 27. [Concurrency — cancel stale runs, serialise deploys](#27--concurrency--cancel-stale-runs-serialise-deploys)
 28. [Timeouts & `continue-on-error`](#28--timeouts--continue-on-error)
 29. [🚀 The production pipeline (capstone)](#29---the-production-pipeline-capstone)
-
-**Day 4 — Advanced: security, OIDC, custom actions & publishing**
-
 30. [Supply-chain security: pin actions to a SHA](#30--supply-chain-security-pin-actions-to-a-sha)
 31. [CodeQL code scanning](#31--codeql-code-scanning)
 32. [Secret scanning & push protection](#32--secret-scanning--push-protection)
@@ -110,7 +110,7 @@ flowchart LR
 4. Scroll down → **Commit changes** (commit directly to `main` for practice).
 5. Click the **Actions** tab to watch it run.
 
-> 💡 **Where the files live in this repo:** the copy-paste YAML files are numbered in teaching order and grouped into folders — files `01`–`11` in [`day-01/workflows/`](day-01/workflows/), `12`–`19` in [`day-02/workflows/`](day-02/workflows/), `20`–`34` in [`day-03/workflows/`](day-03/workflows/), and `35`–`49` in [`day-04/workflows/`](day-04/workflows/) (custom actions live in each day's `actions/` folder). The number is the teaching order — just follow them in sequence. The sample app is in [`sample-app/`](sample-app/) at the repo root.
+> 💡 **Where the files live in this repo:** the copy-paste YAML files are numbered in teaching order and grouped into folders — files `01`–`11` in [`day-01/workflows/`](day-01/workflows/), `12`–`19` in [`day-02/workflows/`](day-02/workflows/), `20`–`29` in [`day-03/workflows/`](day-03/workflows/), and `30`–`49` in [`day-04/workflows/`](day-04/workflows/) (custom actions live in each day's `actions/` folder). The number is the teaching order — just follow them in sequence. The sample app is in [`sample-app/`](sample-app/) at the repo root.
 >
 > 📦 **Everything is prebuilt — nothing to generate.** Clone or download this repo and you get every workflow file plus a complete, ready-to-run sample app, `package-lock.json` included. There is no setup step, no `npm install` on your machine, and no lockfile to create. Copy, commit, watch it run.
 
@@ -630,11 +630,11 @@ flowchart TD
 
 ---
 
-# Day 3 — Production pipelines: reuse, security & gated deploys
+# Day 3 — Real pipelines: matrix, caching, artifacts & reuse
 
-**Goal:** take the multi-job pipeline from the previous day and make it *production-grade* — pass data between jobs with **outputs**, test across a **matrix**, **cache** dependencies and share files with **artifacts**, stop copy-pasting YAML with **reusable workflows** and **composite actions**, lock down `GITHUB_TOKEN` with least-privilege **permissions**, gate deploys behind a **human approval** with environments, and control cost with **concurrency** and **timeouts** — ending in a full **build → test → deploy** capstone.
+**Goal:** take the multi-job pipeline from the previous day and make it *fast and maintainable* — pass data between jobs with **outputs**, test across a **matrix** of versions and operating systems, **cache** dependencies, share real files with **artifacts**, and stop copy-pasting YAML with **reusable workflows** and **composite actions**. (Locking the pipeline down and gating the deploy is where Day 4 picks up.)
 
-The workflow files are in [`day-03/workflows/`](day-03/workflows/) (`20`–`34`), with the composite action in [`day-03/actions/`](day-03/actions/).
+The workflow files are in [`day-03/workflows/`](day-03/workflows/) (`20`–`29`), with the composite action in [`day-03/actions/`](day-03/actions/).
 
 ## 16 — Job outputs — passing values between jobs
 
@@ -891,11 +891,17 @@ Rule of thumb: repeating **steps** → composite action; repeating a whole **job
 
 ---
 
+# Day 4 — Gated deploys, security, OIDC, custom actions & publishing
+
+**Goal:** finish the production pipeline and then harden it the way real teams do — lock down `GITHUB_TOKEN` with least-privilege **permissions**, gate deploys behind a **human approval** with environments, control cost with **concurrency** and **timeouts** (ending in a full **build → test → deploy** capstone), then pin the supply chain, scan code and secrets, authenticate to the cloud with **no stored keys** via OIDC, build your **own actions** (JavaScript and Docker), publish a **Docker image to GHCR**, and version and ship an action — ending in a fully hardened capstone.
+
+The workflow files are in [`day-04/workflows/`](day-04/workflows/) (`30`–`49`), with the custom actions in [`day-04/actions/`](day-04/actions/).
+
 ## 25 — `GITHUB_TOKEN` & least-privilege `permissions`
 
-### ▶️ [`30-token-permissions.yml`](day-03/workflows/30-token-permissions.yml)
+### ▶️ [`30-token-permissions.yml`](day-04/workflows/30-token-permissions.yml)
 
-Every run gets a token it never asked for: GitHub mints a fresh `GITHUB_TOKEN`, injects it as `secrets.GITHUB_TOKEN`, and destroys it when the run ends. It lets you call the GitHub API **as the repo** — no personal token needed. The risk: by default it may be allowed to **write**, and a compromised third-party action in your job inherits it — the exact mechanism behind the supply-chain attacks covered later in the series.
+Every run gets a token it never asked for: GitHub mints a fresh `GITHUB_TOKEN`, injects it as `secrets.GITHUB_TOKEN`, and destroys it when the run ends. It lets you call the GitHub API **as the repo** — no personal token needed. The risk: by default it may be allowed to **write**, and a compromised third-party action in your job inherits it — the exact mechanism behind the supply-chain attacks we dissect in section 30.
 
 ```yaml
 permissions:            # at the TOP of every workflow you write from now on
@@ -919,7 +925,7 @@ Put it at workflow level (all jobs) or per job (overrides the workflow). **Best 
 
 ## 26 — Environments & approvals
 
-### ▶️ [`31-environments-and-approvals.yml`](day-03/workflows/31-environments-and-approvals.yml)
+### ▶️ [`31-environments-and-approvals.yml`](day-04/workflows/31-environments-and-approvals.yml)
 
 An **environment** is a named deployment target — `staging`, `production` — that gives a job three things a plain job lacks: its own **scoped secrets/variables**, **protection rules** (required approvals, wait timers, branch policies), and **deployment history**.
 
@@ -944,7 +950,7 @@ deploy-production:
 
 ## 27 — Concurrency — cancel stale runs, serialise deploys
 
-### ▶️ [`32-concurrency.yml`](day-03/workflows/32-concurrency.yml)
+### ▶️ [`32-concurrency.yml`](day-04/workflows/32-concurrency.yml)
 
 `concurrency` solves two problems that pull in opposite directions. Every run joins a named **group**; only one run per group executes at a time.
 
@@ -970,7 +976,7 @@ concurrency:
 
 ## 28 — Timeouts & `continue-on-error`
 
-### ▶️ [`33-timeout-and-continue-on-error.yml`](day-03/workflows/33-timeout-and-continue-on-error.yml)
+### ▶️ [`33-timeout-and-continue-on-error.yml`](day-04/workflows/33-timeout-and-continue-on-error.yml)
 
 A job's **default timeout is 360 minutes** — six hours. A hung test or a command waiting on input will happily burn all six hours of billed time. `timeout-minutes` is the cheapest insurance in CI — set it to ~2–3× normal runtime.
 
@@ -993,9 +999,9 @@ jobs:
 
 ## 29 — 🚀 The production pipeline (capstone)
 
-### ▶️ [`34-pipeline-capstone.yml`](day-03/workflows/34-pipeline-capstone.yml)
+### ▶️ [`34-pipeline-capstone.yml`](day-04/workflows/34-pipeline-capstone.yml)
 
-Everything from this day in one file a real team would ship:
+Everything so far in one file a real team would ship — Day 3's building blocks (matrix, caching, artifacts, reusable workflows) wired together with the permissions, environments and timeouts from the last four sections:
 
 ```mermaid
 flowchart LR
@@ -1015,12 +1021,6 @@ It combines least-privilege `permissions`, PR-only `concurrency` cancellation, a
 **What to observe:** `lint` and `test` start together; `build` waits for both; staging deploys automatically; **production sits on "Waiting"** until you Approve; `summary` reports a table to the run summary page whatever the outcome.
 
 ---
-
-# Day 4 — Advanced: security, OIDC, custom actions & publishing
-
-**Goal:** harden and scale the pipeline the way production teams do — pin the supply chain, scan code and secrets, authenticate to the cloud with **no stored keys** via OIDC, build your **own actions** (JavaScript and Docker), publish a **Docker image to GHCR**, and version and ship an action — ending in a fully hardened capstone.
-
-The workflow files are in [`day-04/workflows/`](day-04/workflows/) (`35`–`49`), with the custom actions in [`day-04/actions/`](day-04/actions/).
 
 ## 30 — Supply-chain security: pin actions to a SHA
 
@@ -1399,8 +1399,8 @@ From *"I've never written a line of YAML"* to a **hardened, gated, keyless CI/CD
 
 - **Foundations** — YAML, workflow anatomy, triggers, runners, `run`/`uses`, Marketplace actions
 - **The workflow language** — variables, contexts, secrets, and your first full CI pipeline
-- **Real pipelines** — `needs`, `if`, matrix, caching, artifacts, reusable workflows, composite actions, permissions, environments, concurrency
-- **Advanced** — SHA pinning, CodeQL & secret scanning, OIDC keyless cloud auth, custom JavaScript/Docker actions, GHCR, and publishing your own action
+- **Real pipelines** — `needs`, `if`, matrix, caching, artifacts, reusable workflows, composite actions
+- **Gated & hardened** — least-privilege permissions, environments with approvals, concurrency, timeouts, SHA pinning, CodeQL & secret scanning, OIDC keyless cloud auth, custom JavaScript/Docker actions, GHCR, and publishing your own action
 
 **Where to go from here:** build the [`49-hardened-capstone.yml`](day-04/workflows/49-hardened-capstone.yml) against your own project, wire OIDC to your real cloud account, publish an action you actually use, and turn on branch protection so every merge runs through the pipeline. The master blueprint is in [`COURSE_OUTLINE.md`](COURSE_OUTLINE.md).
 
