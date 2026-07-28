@@ -4,7 +4,7 @@
 
 ## Video Title
 
-GitHub Actions Full Course — Token Permissions, Environments, Approvals, Concurrency & the Production Pipeline | Day 4
+GitHub Actions Full Course — Token Permissions, Environments, Approvals, Concurrency, Self-Hosted Runners & the Production Pipeline | Day 4
 
 ---
 
@@ -16,7 +16,7 @@ GitHub Actions Full Course — Token Permissions, Environments, Approvals, Concu
 - Dark GitHub background (#0D1117) with GitHub Actions blue accent (#2088FF)
 - A pipeline graph whose last box carries a yellow ⏸️ **"Waiting for approval"** badge and a **Review deployments** button
 - A padlock labelled `permissions: contents: read` on the left
-- `APPROVALS · PERMISSIONS · CONCURRENCY` badge in a bright pill
+- `APPROVALS · PERMISSIONS · RUNNERS` badge in a bright pill
 - Channel name: LearnWithMithran (bottom corner)
 
 **Key message to convey at a glance:** Your pipeline works — now make it safe to deploy with. Least-privilege tokens, environments, and a human approval gate before production.
@@ -30,6 +30,8 @@ GitHub Actions Full Course — Token Permissions, Environments, Approvals, Concu
 We start with the token you never asked for: every run gets a `GITHUB_TOKEN`, and today you learn to lock it down with least-privilege **`permissions`** — including the rule that catches everyone, that the `permissions:` block is **not additive**. Then we add **environments** (`staging` and `production`) with their own scoped secrets and variables, and see exactly how **secret precedence** lets one workflow deploy to two targets without a single `if:` picking secret names.
 
 Next comes the part everyone wants: **deployment protection rules**. We add a **required reviewer** so the run pauses with a yellow "Waiting" badge and a **Review deployments** button — nothing reaches production until a human clicks Approve. Then we control cost and race conditions with **`concurrency`** (cancel stale PR builds, or serialise deploys so two merges can't fight over one server) and with **`timeout-minutes`** and **`continue-on-error`** — including the `outcome` vs `conclusion` distinction people lose an afternoon to.
+
+Before the finish line we also look at **self-hosted runners** — your own machine, registered with GitHub and targeted by label — when they're actually worth it (GPUs, a private network, licensed tooling) and the one rule you must never break: never attach one to a public repo.
 
 It all comes together in the **production pipeline capstone**: lint and matrix tests running in parallel, a build that happens **once**, and the *same* artifact deployed to staging automatically and then to a gated production — plus a summary job that runs on `always()`. 🚀
 
@@ -70,6 +72,9 @@ Greens Technologys, Perumbakkam (https://maps.app.goo.gl/u34U3rXu8zPFfQh5A)
 🔹 Serialising deploys so two merges can't race, and why the queue is only one deep
 🔹 `timeout-minutes` — the 6-hour default that quietly burns your minutes
 🔹 `continue-on-error` — and `outcome` vs `conclusion`, the trap that wastes an afternoon
+🔹 Self-hosted runners — when to use them, and targeting one by label with `runs-on`
+🔹 The public-repo rule, and why a persistent runner is not a clean machine
+🔹 Runner groups and auto-scaling (Actions Runner Controller / runner scale sets)
 🔹 Production capstone — build → test → deploy with approval, artifacts and least privilege
 🔹 Build once, deploy the same bytes to every environment
 🔹 A `summary` job with `always()` that refuses to report a failed run as green
@@ -90,18 +95,19 @@ Greens Technologys, Perumbakkam (https://maps.app.goo.gl/u34U3rXu8zPFfQh5A)
 29:00 Deployment Gates — Requiring a Human Approval
 39:00 Concurrency — Cancel Stale Builds, Serialise Deploys
 49:00 Timeouts and continue-on-error (outcome vs conclusion)
-57:00 🚀 Capstone — The Full Build → Test → Deploy Pipeline
-1:17:00 Recap — What a Gated Pipeline Looks Like
-1:22:00 What's Next — Security, OIDC & Your Own Actions
+57:00 Self-hosted & Scaled Runners — Bring Your Own Machine
+1:06:00 🚀 Capstone — The Full Build → Test → Deploy Pipeline
+1:26:00 Recap — What a Gated Pipeline Looks Like
+1:31:00 What's Next — Security, OIDC & Your Own Actions
 
-⏭️ *Coming next (the finale):* supply-chain security and pinning actions to a commit SHA, the 2025 `tj-actions` compromise, CodeQL and secret scanning, untrusted pull requests and `pull_request_target`, **OIDC keyless authentication** to AWS/Azure/GCP, self-hosted runners, `workflow_run` and `repository_dispatch`, monorepo change detection, pushing a Docker image to GHCR, building and publishing your own JavaScript and Docker actions — and the fully hardened capstone.
+⏭️ *Coming next (the finale):* supply-chain security and pinning actions to a commit SHA, the 2025 `tj-actions` compromise, CodeQL and secret scanning, untrusted pull requests and `pull_request_target`, **OIDC keyless authentication** to AWS/Azure/GCP, `workflow_run` and `repository_dispatch`, monorepo change detection, pushing a Docker image to GHCR, building and publishing your own JavaScript and Docker actions — and the fully hardened capstone.
 
 👍 If this video helps you, like, subscribe, and turn on notifications for more hands-on content on GitHub Actions, DevOps, Azure, AWS, Linux, and Python.
 
-#GitHubActions #CICD #DevOps #GitHubActionsTutorial #DeploymentApproval #LeastPrivilege #GitHubEnvironments #GitHubToken #Concurrency #ContinuousIntegration #ContinuousDeployment #GitHub #WorkflowAutomation #LearnWithMithran #GitHubActionsCourse #GitHubWorkflow #DevOpsTutorial #CDPipeline #ReleaseManagement #GreensTechnologies #DevOpsTraining
+#GitHubActions #CICD #DevOps #GitHubActionsTutorial #DeploymentApproval #LeastPrivilege #GitHubEnvironments #GitHubToken #Concurrency #SelfHostedRunners #ContinuousIntegration #ContinuousDeployment #GitHub #WorkflowAutomation #LearnWithMithran #GitHubActionsCourse #GitHubWorkflow #DevOpsTutorial #CDPipeline #ReleaseManagement #GreensTechnologies #DevOpsTraining
 
 ---
 
 ## Tags
 
-github actions, github actions tutorial, github actions permissions, github_token permissions, least privilege github actions, github environments, deployment approval github actions, required reviewers, deployment protection rules, environment secrets, secret precedence, github actions concurrency, cancel in progress, serialise deploys, github actions timeout, timeout-minutes, continue-on-error, outcome vs conclusion, build test deploy pipeline, production pipeline github actions, gated deployment, staging production deploy, github actions capstone, ci cd pipeline tutorial, devops tutorial, github actions full course, github actions course 2026, learnwithmithran, greens technologies
+github actions, github actions tutorial, github actions permissions, github_token permissions, least privilege github actions, github environments, deployment approval github actions, required reviewers, deployment protection rules, environment secrets, secret precedence, github actions concurrency, cancel in progress, serialise deploys, github actions timeout, timeout-minutes, continue-on-error, outcome vs conclusion, build test deploy pipeline, self-hosted runners, github actions self hosted runner, runs-on labels, runner groups, actions runner controller, production pipeline github actions, gated deployment, staging production deploy, github actions capstone, ci cd pipeline tutorial, devops tutorial, github actions full course, github actions course 2026, learnwithmithran, greens technologies

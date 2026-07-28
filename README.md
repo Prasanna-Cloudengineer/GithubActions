@@ -57,16 +57,16 @@ Everything is taught against the **current (2026) GitHub Actions platform** — 
 26. [Environments & approvals](#26--environments--approvals)
 27. [Concurrency — cancel stale runs, serialise deploys](#27--concurrency--cancel-stale-runs-serialise-deploys)
 28. [Timeouts & `continue-on-error`](#28--timeouts--continue-on-error)
-29. [🚀 The production pipeline (capstone)](#29---the-production-pipeline-capstone)
+29. [Self-hosted & scaled runners](#29--self-hosted--scaled-runners)
+30. [🚀 The production pipeline (capstone)](#30---the-production-pipeline-capstone)
 
 **Day 5 — Finale: security, OIDC, custom actions & publishing**
 
-30. [Supply-chain security: pin actions to a SHA](#30--supply-chain-security-pin-actions-to-a-sha)
-31. [CodeQL code scanning](#31--codeql-code-scanning)
-32. [Secret scanning & push protection](#32--secret-scanning--push-protection)
-33. [Untrusted PRs & `pull_request_target`](#33--untrusted-prs--pull_request_target)
-34. [OIDC: keyless cloud authentication](#34--oidc-keyless-cloud-authentication)
-35. [Self-hosted & scaled runners](#35--self-hosted--scaled-runners)
+31. [Supply-chain security: pin actions to a SHA](#31--supply-chain-security-pin-actions-to-a-sha)
+32. [CodeQL code scanning](#32--codeql-code-scanning)
+33. [Secret scanning & push protection](#33--secret-scanning--push-protection)
+34. [Untrusted PRs & `pull_request_target`](#34--untrusted-prs--pull_request_target)
+35. [OIDC: keyless cloud authentication](#35--oidc-keyless-cloud-authentication)
 36. [Chaining workflows: `workflow_run` & `repository_dispatch`](#36--chaining-workflows-workflow_run--repository_dispatch)
 37. [Monorepo change detection](#37--monorepo-change-detection)
 38. [Build & push a Docker image to GHCR](#38--build--push-a-docker-image-to-ghcr)
@@ -113,7 +113,7 @@ flowchart LR
 4. Scroll down → **Commit changes** (commit directly to `main` for practice).
 5. Click the **Actions** tab to watch it run.
 
-> 💡 **Where the files live in this repo:** the copy-paste YAML files are numbered in teaching order and grouped into folders — files `01`–`11` in [`day-01/workflows/`](day-01/workflows/), `12`–`19` in [`day-02/workflows/`](day-02/workflows/), `20`–`29` in [`day-03/workflows/`](day-03/workflows/), `30`–`34` in [`day-04/workflows/`](day-04/workflows/), and `35`–`49` in [`day-05/workflows/`](day-05/workflows/) (custom actions live in each day's `actions/` folder). The number is the teaching order — just follow them in sequence. The sample app is in [`sample-app/`](sample-app/) at the repo root.
+> 💡 **Where the files live in this repo:** the copy-paste YAML files are numbered in teaching order and grouped into folders — files `01`–`11` in [`day-01/workflows/`](day-01/workflows/), `12`–`19` in [`day-02/workflows/`](day-02/workflows/), `20`–`29` in [`day-03/workflows/`](day-03/workflows/), `30`–`34` in [`day-04/workflows/`](day-04/workflows/), and `35`–`49` in [`day-05/workflows/`](day-05/workflows/) — custom actions live in each day's `actions/` folder. The number is the teaching order, so just follow them in sequence; a letter suffix (`33a`) marks a topic slotted in between two existing ones, and a skipped number means that file is taught on a different day. The sample app is in [`sample-app/`](sample-app/) at the repo root.
 >
 > 📦 **Everything is prebuilt — nothing to generate.** Clone or download this repo and you get every workflow file plus a complete, ready-to-run sample app, `package-lock.json` included. There is no setup step, no `npm install` on your machine, and no lockfile to create. Copy, commit, watch it run.
 
@@ -896,15 +896,15 @@ Rule of thumb: repeating **steps** → composite action; repeating a whole **job
 
 # Day 4 — Gated deploys: permissions, environments & the production pipeline
 
-**Goal:** turn the working pipeline into one a team can actually deploy with — lock down `GITHUB_TOKEN` with least-privilege **permissions**, gate deploys behind a **human approval** using environments, and control cost and blast radius with **concurrency** and **timeouts**. It ends in a full **build → test → deploy** capstone that ships to `staging` automatically and then waits for a human to approve `production`.
+**Goal:** turn the working pipeline into one a team can actually deploy with — lock down `GITHUB_TOKEN` with least-privilege **permissions**, gate deploys behind a **human approval** using environments, control cost and blast radius with **concurrency** and **timeouts**, and pick the right machine to run on with **self-hosted runners**. It ends in a full **build → test → deploy** capstone that ships to `staging` automatically and then waits for a human to approve `production`.
 
-The workflow files are in [`day-04/workflows/`](day-04/workflows/) (`30`–`34`).
+The workflow files are in [`day-04/workflows/`](day-04/workflows/) (`30`–`34`, including `33a`).
 
 ## 25 — `GITHUB_TOKEN` & least-privilege `permissions`
 
 ### ▶️ [`30-token-permissions.yml`](day-04/workflows/30-token-permissions.yml)
 
-Every run gets a token it never asked for: GitHub mints a fresh `GITHUB_TOKEN`, injects it as `secrets.GITHUB_TOKEN`, and destroys it when the run ends. It lets you call the GitHub API **as the repo** — no personal token needed. The risk: by default it may be allowed to **write**, and a compromised third-party action in your job inherits it — the exact mechanism behind the supply-chain attacks we dissect in section 30.
+Every run gets a token it never asked for: GitHub mints a fresh `GITHUB_TOKEN`, injects it as `secrets.GITHUB_TOKEN`, and destroys it when the run ends. It lets you call the GitHub API **as the repo** — no personal token needed. The risk: by default it may be allowed to **write**, and a compromised third-party action in your job inherits it — the exact mechanism behind the supply-chain attacks we dissect in section 31.
 
 ```yaml
 permissions:            # at the TOP of every workflow you write from now on
@@ -1000,11 +1000,23 @@ jobs:
 
 ---
 
-## 29 — 🚀 The production pipeline (capstone)
+## 29 — Self-hosted & scaled runners
+
+### ▶️ [`33a-self-hosted-runners.yml`](day-04/workflows/33a-self-hosted-runners.yml)
+
+Reach for a self-hosted runner — a machine **you** register — only when hosted ones can't do the job: special hardware (GPU/ARM), private-network access, licensed tooling, or very high volume. Target it by **label**: `runs-on: [self-hosted, linux, x64]`.
+
+> ⚠️ **Never attach a self-hosted runner to a public repo** — anyone's PR would run their code on your machine, inside your network. And unlike hosted runners (destroyed after each job), self-hosted ones **persist**: state and malware survive between runs unless you clean up or run each job in a fresh container. Scale with **runner groups** and ephemeral auto-scaling (Actions Runner Controller / runner scale sets), which restore the clean-machine-every-time property.
+
+**What to observe:** the demo sits in **Queued** forever unless a matching runner is online — that wait *is* the `runs-on` label-matching lesson.
+
+---
+
+## 30 — 🚀 The production pipeline (capstone)
 
 ### ▶️ [`34-pipeline-capstone.yml`](day-04/workflows/34-pipeline-capstone.yml)
 
-Everything so far in one file a real team would ship — Day 3's building blocks (matrix, caching, artifacts, reusable workflows) wired together with the permissions, environments and timeouts from the last four sections:
+Everything so far in one file a real team would ship — Day 3's building blocks (matrix, caching, artifacts, reusable workflows) wired together with the permissions, environments and timeouts from earlier in this day:
 
 ```mermaid
 flowchart LR
@@ -1029,9 +1041,9 @@ It combines least-privilege `permissions`, PR-only `concurrency` cancellation, a
 
 **Goal:** take the gated pipeline and harden it the way real security teams do — pin the supply chain to immutable **SHAs**, scan code with **CodeQL** and catch leaked **secrets**, defuse untrusted pull requests, authenticate to the cloud with **no stored keys** via **OIDC**, then build your **own actions** (JavaScript and Docker), push a **Docker image to GHCR**, and version and publish an action — ending in a fully **hardened capstone**.
 
-The workflow files are in [`day-05/workflows/`](day-05/workflows/) (`35`–`49`), with the custom actions in [`day-05/actions/`](day-05/actions/).
+The workflow files are in [`day-05/workflows/`](day-05/workflows/) (`35`–`49` — `40` is missing because it's taught earlier, as `33a`), with the custom actions in [`day-05/actions/`](day-05/actions/).
 
-## 30 — Supply-chain security: pin actions to a SHA
+## 31 — Supply-chain security: pin actions to a SHA
 
 ### ▶️ [`35-sha-pinning.yml`](day-05/workflows/35-sha-pinning.yml)
 
@@ -1050,7 +1062,7 @@ A SHA names one exact commit that can never be swapped. Keep the tag as a traili
 
 ---
 
-## 31 — CodeQL code scanning
+## 32 — CodeQL code scanning
 
 ### ▶️ [`36-codeql-code-scanning.yml`](day-05/workflows/36-codeql-code-scanning.yml)
 
@@ -1068,7 +1080,7 @@ The three steps are always `codeql-action/init` → (build) → `codeql-action/a
 
 ---
 
-## 32 — Secret scanning & push protection
+## 33 — Secret scanning & push protection
 
 ### ▶️ [`37-secret-scanning.yml`](day-05/workflows/37-secret-scanning.yml)
 
@@ -1083,7 +1095,7 @@ Two layers stop credentials reaching the repo:
 
 ---
 
-## 33 — Untrusted PRs & `pull_request_target`
+## 34 — Untrusted PRs & `pull_request_target`
 
 ### ▶️ [`38-untrusted-pr-hardening.yml`](day-05/workflows/38-untrusted-pr-hardening.yml)
 
@@ -1100,7 +1112,7 @@ The rules: prefer plain `pull_request`; with `pull_request_target` **never run t
 
 ---
 
-## 34 — OIDC: keyless cloud authentication
+## 35 — OIDC: keyless cloud authentication
 
 ### ▶️ [`39-oidc-cloud-auth.yml`](day-05/workflows/39-oidc-cloud-auth.yml)
 
@@ -1124,18 +1136,6 @@ permissions:
 ```
 
 > 🔑 **Scope trust with the `sub` claim.** On the cloud side, don't trust "any GitHub repo" — trust `repo:my-org/my-repo:ref:refs/heads/main` or `:environment:production`. That's what stops a token from a random branch or fork assuming your prod role. Same `id-token: write` for every cloud; only the login action differs (`azure/login`, `google-github-actions/auth`).
-
----
-
-## 35 — Self-hosted & scaled runners
-
-### ▶️ [`40-self-hosted-runners.yml`](day-05/workflows/40-self-hosted-runners.yml)
-
-Reach for a self-hosted runner — a machine **you** register — only when hosted ones can't do the job: special hardware (GPU/ARM), private-network access, licensed tooling, or very high volume. Target it by **label**: `runs-on: [self-hosted, linux, x64]`.
-
-> ⚠️ **Never attach a self-hosted runner to a public repo** — anyone's PR would run their code on your machine, inside your network. And unlike hosted runners (destroyed after each job), self-hosted ones **persist**: state and malware survive between runs unless you clean up or run each job in a fresh container. Scale with **runner groups** and ephemeral auto-scaling (Actions Runner Controller / runner scale sets), which restore the clean-machine-every-time property.
-
-**What to observe:** the demo sits in **Queued** forever unless a matching runner is online — that wait *is* the `runs-on` label-matching lesson.
 
 ---
 
@@ -1244,7 +1244,7 @@ Once an action lives in its own repo, others consume it as `uses: your-org/actio
 ```yaml
 @v1        → auto non-breaking v1.x updates   (most consumers)
 @v1.2.3    → exact, never moves
-@<sha>     → maximum security pin             (§30)
+@<sha>     → maximum security pin             (§31)
 ```
 
 > 🔑 **The moving-tag trick:** after publishing `v1.4.0`, force-move `v1` to that commit (`git tag -f v1 v1.4.0 && git push --force origin v1`) — the whole maintenance job, automated by the release workflow. Publishing to the **Marketplace** is a manual step: draft a release and tick *"Publish this Action to the Marketplace"* (needs a root `action.yml` with `name`, `description`, `branding`).
@@ -1283,7 +1283,7 @@ flowchart LR
 
 SHA-pinned actions, least-privilege `permissions`, CodeQL + secret-scan gates, a Docker image **built once and pushed to GHCR**, and a `production`-gated deploy that authenticates via **OIDC with no stored cloud key**.
 
-> 🔑 It's the union of the whole course: least privilege (§25), environments/approval (§26), build-once/deploy-same-artifact (§29), SHA pinning (§30), scanning (§31–32), GHCR (§38), and keyless OIDC (§34) — the shape a security-conscious team actually ships.
+> 🔑 It's the union of the whole course: least privilege (§25), environments/approval (§26), build-once/deploy-same-artifact (§30), SHA pinning (§31), scanning (§32–33), GHCR (§38), and keyless OIDC (§35) — the shape a security-conscious team actually ships.
 
 **📋 Setup:** the `sample-app/` folder (it ships the `Dockerfile` this builds), the `production` environment with a required reviewer, and (for the deploy) an AWS role trusting this repo's OIDC `sub` claim in `vars.AWS_ROLE_ARN`. Remove the OIDC step to run without a cloud account.
 
@@ -1409,7 +1409,7 @@ From *"I've never written a line of YAML"* to a **hardened, gated, keyless CI/CD
 - **Foundations** — YAML, workflow anatomy, triggers, runners, `run`/`uses`, Marketplace actions
 - **The workflow language** — variables, contexts, secrets, and your first full CI pipeline
 - **Real pipelines** — `needs`, `if`, matrix, caching, artifacts, reusable workflows, composite actions
-- **Gated deploys** — least-privilege permissions, environments with approvals, concurrency, timeouts, and a production pipeline
+- **Gated deploys** — least-privilege permissions, environments with approvals, concurrency, timeouts, self-hosted runners, and a production pipeline
 - **Hardened & published** — SHA pinning, CodeQL & secret scanning, untrusted-PR safety, OIDC keyless cloud auth, custom JavaScript/Docker actions, GHCR, and publishing your own action
 
 **Where to go from here:** build the [`49-hardened-capstone.yml`](day-05/workflows/49-hardened-capstone.yml) against your own project, wire OIDC to your real cloud account, publish an action you actually use, and turn on branch protection so every merge runs through the pipeline. The master blueprint is in [`COURSE_OUTLINE.md`](COURSE_OUTLINE.md).

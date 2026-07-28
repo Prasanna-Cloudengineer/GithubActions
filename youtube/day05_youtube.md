@@ -29,7 +29,7 @@ GitHub Actions Full Course — SHA Pinning, CodeQL, OIDC, Custom Actions & GHCR 
 
 We start with **supply-chain security**: why `uses: some/action@v1` trusts a *movable pointer*, how the 2025 `tj-actions/changed-files` compromise dumped CI secrets into build logs, and why repos pinned to a full commit **SHA** were untouched — plus **Dependabot** to keep those pins fresh so you don't fall behind. Then we add **CodeQL** code scanning and **secret scanning** with push protection, and defuse the single most dangerous Actions misconfiguration: running untrusted pull-request code with `pull_request_target` (poisoned pipeline execution).
 
-Next we go keyless with **OIDC** — GitHub mints a short-lived, signed token at runtime that proves *"this is repo X on branch Z"*, so there is **no stored cloud key** to leak — including how to scope trust with the `sub` claim. We cover **self-hosted runners** and when they're worth it, then chain work across workflows and across systems with **`workflow_run`** and **`repository_dispatch`**, and build only what changed in a monorepo with per-path change detection.
+Next we go keyless with **OIDC** — GitHub mints a short-lived, signed token at runtime that proves *"this is repo X on branch Z"*, so there is **no stored cloud key** to leak — including how to scope trust with the `sub` claim. Then we chain work across workflows and across systems with **`workflow_run`** and **`repository_dispatch`**, and build only what changed in a monorepo with per-path change detection.
 
 Finally we build and publish: a **Docker image pushed to GHCR** with `packages: write`, your **own JavaScript action** and **Docker container action** from scratch, and versioning and publishing an action with semver plus the moving-major-tag trick — with debugging tricks (and running workflows locally with `act`) along the way. It all lands in the **fully hardened capstone pipeline**: SHA-pinned, scanned, image built once and pushed to GHCR, deployed through an OIDC-authenticated, approval-gated production environment. 🚀
 
@@ -68,7 +68,6 @@ Greens Technologys, Perumbakkam (https://maps.app.goo.gl/u34U3rXu8zPFfQh5A)
 🔹 `pull_request` vs `pull_request_target` — poisoned pipeline execution and how to avoid it
 🔹 OIDC — keyless cloud authentication with short-lived tokens (no stored keys)
 🔹 `id-token: write` and scoping cloud trust with the `sub` claim (repo, branch, environment)
-🔹 Self-hosted runners — when to use them and the public-repo security rule
 🔹 `workflow_run` — chaining one workflow off another
 🔹 `repository_dispatch` — triggering workflows from outside GitHub
 🔹 Monorepo change detection — build only what changed (and the skipped-job trap)
@@ -98,16 +97,15 @@ Greens Technologys, Perumbakkam (https://maps.app.goo.gl/u34U3rXu8zPFfQh5A)
 49:00 Untrusted PRs & pull_request_target
 1:02:00 OIDC — Keyless Cloud Authentication
 1:17:00 Scoping Trust with the sub Claim
-1:25:00 Self-hosted & Scaled Runners
-1:34:00 workflow_run & repository_dispatch
-1:46:00 Monorepo Change Detection
-1:54:00 Build & Push a Docker Image to GHCR
-2:07:00 Custom JavaScript Actions
-2:21:00 Custom Docker Container Actions
-2:32:00 Publishing & Versioning Your Own Action
-2:42:00 Debugging & Running Locally with act
-2:51:00 🚀 The Hardened Capstone Pipeline
-3:11:00 Course Wrap-up & Where to Go Next
+1:25:00 workflow_run & repository_dispatch
+1:37:00 Monorepo Change Detection
+1:45:00 Build & Push a Docker Image to GHCR
+1:58:00 Custom JavaScript Actions
+2:12:00 Custom Docker Container Actions
+2:23:00 Publishing & Versioning Your Own Action
+2:33:00 Debugging & Running Locally with act
+2:42:00 🚀 The Hardened Capstone Pipeline
+3:02:00 Course Wrap-up & Where to Go Next
 
 ⏭️ *You've completed the series:* you can now build secure, production-grade CI/CD pipelines end to end — least-privilege tokens, gated deployments with human approval, a pinned supply chain, code and secret scanning, keyless OIDC cloud deploys, your own published actions, and a fully hardened capstone. Take it to your own project next.
 
@@ -119,4 +117,4 @@ Greens Technologys, Perumbakkam (https://maps.app.goo.gl/u34U3rXu8zPFfQh5A)
 
 ## Tags
 
-github actions, github actions tutorial, github actions security, sha pinning github actions, pin actions to sha, tj-actions compromise, dependabot github actions, immutable actions, codeql, github code scanning, security-events write, secret scanning, push protection, pull_request_target, poisoned pipeline execution, github actions oidc, keyless authentication, oidc aws github actions, id-token write, sub claim, self-hosted runners, workflow_run, repository_dispatch, monorepo github actions, dorny paths-filter, docker build push ghcr, github container registry, custom github action, javascript action, docker container action, publish github action, moving major tag, act nektos, hardened pipeline, devsecops, ci cd security, github actions full course, github actions course 2026, learnwithmithran, greens technologies
+github actions, github actions tutorial, github actions security, sha pinning github actions, pin actions to sha, tj-actions compromise, dependabot github actions, immutable actions, codeql, github code scanning, security-events write, secret scanning, push protection, pull_request_target, poisoned pipeline execution, github actions oidc, keyless authentication, oidc aws github actions, id-token write, sub claim, workflow_run, repository_dispatch, monorepo github actions, dorny paths-filter, docker build push ghcr, github container registry, custom github action, javascript action, docker container action, publish github action, moving major tag, act nektos, hardened pipeline, devsecops, ci cd security, github actions full course, github actions course 2026, learnwithmithran, greens technologies
