@@ -1,4 +1,4 @@
-# 38 - Handling UNTRUSTED pull requests safely (poisoned pipeline execution)
+# 39 - Handling UNTRUSTED pull requests safely (poisoned pipeline execution)
 #
 # THE TRAP: `pull_request` vs `pull_request_target`.
 #
@@ -38,7 +38,7 @@
 # `pull_request_target`, holds the write token, and deliberately does NOT run
 # any PR code — it only reads metadata.
 
-name: 38 - Untrusted PR Hardening
+name: 39 - Untrusted PR Hardening
 
 # Demonstrates BOTH triggers in one file for teaching. In real life you would
 # usually split these into two files.

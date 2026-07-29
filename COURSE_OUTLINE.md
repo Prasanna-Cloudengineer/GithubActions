@@ -181,20 +181,20 @@ This document is the master blueprint. The teaching script for the recorded vide
 | Day 1 | [`README.md`](README.md) §1–7 | [`day-01/workflows/`](day-01/workflows/) `01`–`11` | [`youtube/day01_youtube.md`](youtube/day01_youtube.md) | ✅ Recorded |
 | Day 2 | [`README.md`](README.md) §8–15 | [`day-02/workflows/`](day-02/workflows/) `12`–`19` | [`youtube/day02_youtube.md`](youtube/day02_youtube.md) | ✅ Recorded |
 | Day 3 | [`README.md`](README.md) §16–24 | [`day-03/workflows/`](day-03/workflows/) `20`–`29` + [`day-03/actions/`](day-03/actions/) | [`youtube/day03_youtube.md`](youtube/day03_youtube.md) | ✅ Recorded (through the composite action, `29`) |
-| Day 4 | [`README.md`](README.md) §25–30 | [`day-04/workflows/`](day-04/workflows/) `30`–`34` (incl. `33a`) | [`youtube/day04_youtube.md`](youtube/day04_youtube.md) | 📝 Script ready, recording pending |
-| Day 5 | [`README.md`](README.md) §31–43 | [`day-05/workflows/`](day-05/workflows/) `35`–`49` (no `40`) + [`day-05/actions/`](day-05/actions/) | [`youtube/day05_youtube.md`](youtube/day05_youtube.md) | 📝 Script ready, recording pending |
+| Day 4 | [`README.md`](README.md) §25–30 | [`day-04/workflows/`](day-04/workflows/) `30`–`35` | [`youtube/day04_youtube.md`](youtube/day04_youtube.md) | 📝 Script ready, recording pending |
+| Day 5 | [`README.md`](README.md) §31–43 | [`day-05/workflows/`](day-05/workflows/) `36`–`49` + [`day-05/actions/`](day-05/actions/) | [`youtube/day05_youtube.md`](youtube/day05_youtube.md) | 📝 Script ready, recording pending |
 
-**Workflow files are numbered continuously across the whole course** (`01`–`11` = Day 1, `12`–`19` = Day 2, `20`–`29` = Day 3, `30`–`34` = Day 4, `35`–`49` = Day 5) — the number is the teaching order. Each file lives under the folder for the day that teaches it (`day-01/` … `day-05/`).
+**Workflow files are numbered continuously across the whole course** (`01`–`11` = Day 1, `12`–`19` = Day 2, `20`–`29` = Day 3, `30`–`35` = Day 4, `36`–`49` = Day 5) — the number is the teaching order, running unbroken from `01` to `49`. Each file lives under the folder for the day that teaches it (`day-01/` … `day-05/`).
 
 > ⚠️ **The course grew from a 3-day plan into 5 days, and the day boundaries moved as recording progressed.** The original blueprint packed all of "intermediate real pipelines" into one day; in practice it split across Day 2 (orchestration) and Day 3 (matrix → caching → artifacts → reuse), and everything from token permissions onward became Days 4 and 5.
 > - Day 1 stopped after `actions/setup-node`, so variables / contexts / secrets and the CI capstone (`12`–`15`) are taught at the **start of Day 2**.
 > - Day 2 runs through **status functions (`19`)**. **Job outputs (`20`) through the composite action (`29`) are Day 3** — that is where the recorded Day 3 video ends.
-> - Day 4 opens with the material the blueprint had put in Day 3: **`GITHUB_TOKEN` permissions (`30`), environments & approvals (`31`), concurrency (`32`), timeouts (`33`), self-hosted runners (`33a`)** — and ends at the **production pipeline capstone (`34`)**.
-> - Day 5 is the finale: the whole advanced/security set — **SHA pinning (`35`), CodeQL & secret scanning (`36`–`37`), untrusted PRs (`38`), OIDC (`39`), orchestration & monorepos (`41`–`43`), GHCR and custom actions (`44`–`48`)** — ending in the **hardened capstone (`49`)**.
-> - **`40` is absent from `day-05/`**: self-hosted runners moved to Day 4 as **`33a`**, keeping every other file's number (and every link to it) stable. A letter suffix means a topic was slotted in; a missing number means it moved days.
+> - Day 4 opens with the material the blueprint had put in Day 3: **`GITHUB_TOKEN` permissions (`30`), environments & approvals (`31`), concurrency (`32`), timeouts (`33`), self-hosted runners (`34`)** — and ends at the **production pipeline capstone (`35`)**.
+> - Day 5 is the finale: the whole advanced/security set — **SHA pinning (`36`), CodeQL & secret scanning (`37`–`38`), untrusted PRs (`39`), OIDC (`40`), orchestration & monorepos (`41`–`43`), GHCR and custom actions (`44`–`48`)** — ending in the **hardened capstone (`49`)**.
+> - Moving self-hosted runners from Day 5 to Day 4 first left a `33a` and a gap at `40`; the files were **renumbered** afterwards so the sequence runs unbroken `01`–`49`. Renumbering is a last resort — it invalidates every existing link — and was only affordable because Days 4 and 5 were not yet recorded.
 >
-> **The course therefore has two capstones:** `34` (the production pipeline, closing Day 4) and `49` (the hardened pipeline, closing Day 5).
+> **The course therefore has two capstones:** `35` (the production pipeline, closing Day 4) and `49` (the hardened pipeline, closing Day 5).
 >
 > The single root [`README.md`](README.md) is the source of truth for what is actually taught and in what order; the per-topic lists above are the blueprint.
 
-**Next:** all five days' teaching content and workflow files are written (README §1–43, workflows `01`–`49`, `youtube/day0{1..5}_youtube.md`). Remaining work is **recording** Day 4 (`30`–`34`) and Day 5 (`35`–`49`), and refining as the videos are shot.
+**Next:** all five days' teaching content and workflow files are written (README §1–43, workflows `01`–`49`, `youtube/day0{1..5}_youtube.md`). Remaining work is **recording** Day 4 (`30`–`35`) and Day 5 (`36`–`49`), and refining as the videos are shot.

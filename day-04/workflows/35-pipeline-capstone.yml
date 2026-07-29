@@ -1,4 +1,4 @@
-# 34 - 🚀 CAPSTONE: a real build -> test -> deploy pipeline
+# 35 - 🚀 CAPSTONE: a real build -> test -> deploy pipeline
 #
 # Everything so far, in one file that a working team would actually ship:
 # Day 3's building blocks plus the permissions/environments/timeouts you just
@@ -15,7 +15,7 @@
 #     sample-app/           (the whole folder — RE-COPY it even if you think
 #                            you have it. A Day 1 copy has no `build` script
 #                            and the build job fails: Missing script: "build")
-#     .github/workflows/34-pipeline-capstone.yml         (this file)
+#     .github/workflows/35-pipeline-capstone.yml         (this file)
 #     .github/workflows/27-reusable-workflow-callee.yml  (the test job it calls
 #                            — a Day 3 file, in day-03/workflows/)
 #   Then create the `staging` and `production` environments described in
@@ -33,7 +33,7 @@
 # staging deploys automatically; production sits on "Waiting" until you
 # click Approve; summary runs whatever happened.
 
-name: 34 - CI/CD Pipeline (Capstone)
+name: 35 - CI/CD Pipeline (Capstone)
 
 on:
   push:

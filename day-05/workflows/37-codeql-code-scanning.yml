@@ -1,4 +1,4 @@
-# 36 - CodeQL: static code scanning built into the pipeline
+# 37 - CodeQL: static code scanning built into the pipeline
 #
 # CodeQL is GitHub's static-analysis engine. It parses your code into a
 # database and runs security queries against it — SQL injection, path
@@ -33,7 +33,7 @@
 # shows "No alerts". Introduce an obvious bug (e.g. build a shell command from
 # untrusted input) and watch the next run flag it, with the line highlighted.
 
-name: 36 - CodeQL
+name: 37 - CodeQL
 
 on:
   push:

@@ -13,7 +13,7 @@
 #      "Node.js 20 is deprecated. The following actions target Node.js 20
 #       but are being forced to run on Node.js 24: actions/upload-artifact@v4"
 #    That warning is the signal to bump the major. (Self-hosted runners need
-#    2.327.1+ for the Node 24 builds — see file 33a, later in the course.)
+#    2.327.1+ for the Node 24 builds — see file 34, later in the course.)
 #    The v3 artifact actions were FULLY RETIRED on 30 January 2025 and fail
 #    outright. Tutorials older than that are broken — check before you copy.
 #

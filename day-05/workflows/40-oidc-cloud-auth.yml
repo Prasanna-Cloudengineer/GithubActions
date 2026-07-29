@@ -1,4 +1,4 @@
-# 39 - OIDC: authenticate to the cloud with NO long-lived secrets
+# 40 - OIDC: authenticate to the cloud with NO long-lived secrets
 #
 # THE PROBLEM WITH STORED CLOUD KEYS: the usual way to deploy is to paste an
 # AWS access key (or a GCP service-account JSON, or an Azure client secret)
@@ -48,7 +48,7 @@
 # `aws sts get-caller-identity` prints the assumed-role ARN — with no access
 # key anywhere in the repo. (Azure and GCP equivalents are noted at the bottom.)
 
-name: 39 - OIDC Cloud Auth
+name: 40 - OIDC Cloud Auth
 
 on:
   workflow_dispatch:

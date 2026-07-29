@@ -20,7 +20,7 @@
 #      the version of itself on the default branch, and runs with a token that
 #      (unlike a fork's `pull_request`) CAN have write access. That's powerful —
 #      and the reason you must treat any artifacts/data from the upstream run as
-#      untrusted input (same poisoned-pipeline caution as file 38).
+#      untrusted input (same poisoned-pipeline caution as file 39).
 #
 # GETTING DATA ACROSS: the downstream run does not automatically have the
 # upstream run's files. You fetch them with `actions/download-artifact` using

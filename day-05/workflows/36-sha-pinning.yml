@@ -1,4 +1,4 @@
-# 35 - Supply-chain security: PIN ACTIONS TO A FULL COMMIT SHA
+# 36 - Supply-chain security: PIN ACTIONS TO A FULL COMMIT SHA
 #
 # When you write `uses: actions/checkout@v5`, `@v5` is a TAG — and a tag is a
 # movable pointer. Whoever controls the repo can re-point `v5` at any commit,
@@ -43,7 +43,7 @@
 # `uses:` lines are written, not in the output. Compare the pinned job to the
 # tag-only job and note that both do the same thing; only one is tamper-proof.
 
-name: 35 - SHA Pinning
+name: 36 - SHA Pinning
 
 on: workflow_dispatch
 

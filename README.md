@@ -113,7 +113,7 @@ flowchart LR
 4. Scroll down → **Commit changes** (commit directly to `main` for practice).
 5. Click the **Actions** tab to watch it run.
 
-> 💡 **Where the files live in this repo:** the copy-paste YAML files are numbered in teaching order and grouped into folders — files `01`–`11` in [`day-01/workflows/`](day-01/workflows/), `12`–`19` in [`day-02/workflows/`](day-02/workflows/), `20`–`29` in [`day-03/workflows/`](day-03/workflows/), `30`–`34` in [`day-04/workflows/`](day-04/workflows/), and `35`–`49` in [`day-05/workflows/`](day-05/workflows/) — custom actions live in each day's `actions/` folder. The number is the teaching order, so just follow them in sequence; a letter suffix (`33a`) marks a topic slotted in between two existing ones, and a skipped number means that file is taught on a different day. The sample app is in [`sample-app/`](sample-app/) at the repo root.
+> 💡 **Where the files live in this repo:** the copy-paste YAML files are numbered in teaching order and grouped into folders — files `01`–`11` in [`day-01/workflows/`](day-01/workflows/), `12`–`19` in [`day-02/workflows/`](day-02/workflows/), `20`–`29` in [`day-03/workflows/`](day-03/workflows/), `30`–`35` in [`day-04/workflows/`](day-04/workflows/), and `36`–`49` in [`day-05/workflows/`](day-05/workflows/) — custom actions live in each day's `actions/` folder. The numbers run continuously from `01` to `49` with no gaps, so just follow them in sequence. The sample app is in [`sample-app/`](sample-app/) at the repo root.
 >
 > 📦 **Everything is prebuilt — nothing to generate.** Clone or download this repo and you get every workflow file plus a complete, ready-to-run sample app, `package-lock.json` included. There is no setup step, no `npm install` on your machine, and no lockfile to create. Copy, commit, watch it run.
 
@@ -898,7 +898,7 @@ Rule of thumb: repeating **steps** → composite action; repeating a whole **job
 
 **Goal:** turn the working pipeline into one a team can actually deploy with — lock down `GITHUB_TOKEN` with least-privilege **permissions**, gate deploys behind a **human approval** using environments, control cost and blast radius with **concurrency** and **timeouts**, and pick the right machine to run on with **self-hosted runners**. It ends in a full **build → test → deploy** capstone that ships to `staging` automatically and then waits for a human to approve `production`.
 
-The workflow files are in [`day-04/workflows/`](day-04/workflows/) (`30`–`34`, including `33a`).
+The workflow files are in [`day-04/workflows/`](day-04/workflows/) (`30`–`35`).
 
 ## 25 — `GITHUB_TOKEN` & least-privilege `permissions`
 
@@ -1002,7 +1002,7 @@ jobs:
 
 ## 29 — Self-hosted & scaled runners
 
-### ▶️ [`33a-self-hosted-runners.yml`](day-04/workflows/33a-self-hosted-runners.yml)
+### ▶️ [`34-self-hosted-runners.yml`](day-04/workflows/34-self-hosted-runners.yml)
 
 Reach for a self-hosted runner — a machine **you** register — only when hosted ones can't do the job: special hardware (GPU/ARM), private-network access, licensed tooling, or very high volume. Target it by **label**: `runs-on: [self-hosted, linux, x64]`.
 
@@ -1014,7 +1014,7 @@ Reach for a self-hosted runner — a machine **you** register — only when host
 
 ## 30 — 🚀 The production pipeline (capstone)
 
-### ▶️ [`34-pipeline-capstone.yml`](day-04/workflows/34-pipeline-capstone.yml)
+### ▶️ [`35-pipeline-capstone.yml`](day-04/workflows/35-pipeline-capstone.yml)
 
 Everything so far in one file a real team would ship — Day 3's building blocks (matrix, caching, artifacts, reusable workflows) wired together with the permissions, environments and timeouts from earlier in this day:
 
@@ -1041,11 +1041,11 @@ It combines least-privilege `permissions`, PR-only `concurrency` cancellation, a
 
 **Goal:** take the gated pipeline and harden it the way real security teams do — pin the supply chain to immutable **SHAs**, scan code with **CodeQL** and catch leaked **secrets**, defuse untrusted pull requests, authenticate to the cloud with **no stored keys** via **OIDC**, then build your **own actions** (JavaScript and Docker), push a **Docker image to GHCR**, and version and publish an action — ending in a fully **hardened capstone**.
 
-The workflow files are in [`day-05/workflows/`](day-05/workflows/) (`35`–`49` — `40` is missing because it's taught earlier, as `33a`), with the custom actions in [`day-05/actions/`](day-05/actions/).
+The workflow files are in [`day-05/workflows/`](day-05/workflows/) (`36`–`49`), with the custom actions in [`day-05/actions/`](day-05/actions/).
 
 ## 31 — Supply-chain security: pin actions to a SHA
 
-### ▶️ [`35-sha-pinning.yml`](day-05/workflows/35-sha-pinning.yml)
+### ▶️ [`36-sha-pinning.yml`](day-05/workflows/36-sha-pinning.yml)
 
 `uses: some/action@v1` trusts a **tag**, and a tag is a *movable pointer* — whoever controls the action's repo can silently re-point `v1` at new code that runs with your secrets and `GITHUB_TOKEN`.
 
@@ -1064,7 +1064,7 @@ A SHA names one exact commit that can never be swapped. Keep the tag as a traili
 
 ## 32 — CodeQL code scanning
 
-### ▶️ [`36-codeql-code-scanning.yml`](day-05/workflows/36-codeql-code-scanning.yml)
+### ▶️ [`37-codeql-code-scanning.yml`](day-05/workflows/37-codeql-code-scanning.yml)
 
 CodeQL is GitHub's static-analysis engine. It compiles your code into a database and runs security queries (injection, path traversal, hard-coded secrets…), posting findings to the repo's **Security → Code scanning** tab, annotated on the exact line and on PRs.
 
@@ -1082,7 +1082,7 @@ The three steps are always `codeql-action/init` → (build) → `codeql-action/a
 
 ## 33 — Secret scanning & push protection
 
-### ▶️ [`37-secret-scanning.yml`](day-05/workflows/37-secret-scanning.yml)
+### ▶️ [`38-secret-scanning.yml`](day-05/workflows/38-secret-scanning.yml)
 
 Two layers stop credentials reaching the repo:
 
@@ -1097,7 +1097,7 @@ Two layers stop credentials reaching the repo:
 
 ## 34 — Untrusted PRs & `pull_request_target`
 
-### ▶️ [`38-untrusted-pr-hardening.yml`](day-05/workflows/38-untrusted-pr-hardening.yml)
+### ▶️ [`39-untrusted-pr-hardening.yml`](day-05/workflows/39-untrusted-pr-hardening.yml)
 
 The single most dangerous Actions misconfiguration lives in the difference between two triggers:
 
@@ -1114,7 +1114,7 @@ The rules: prefer plain `pull_request`; with `pull_request_target` **never run t
 
 ## 35 — OIDC: keyless cloud authentication
 
-### ▶️ [`39-oidc-cloud-auth.yml`](day-05/workflows/39-oidc-cloud-auth.yml)
+### ▶️ [`40-oidc-cloud-auth.yml`](day-05/workflows/40-oidc-cloud-auth.yml)
 
 Storing a long-lived AWS/GCP/Azure key in repo secrets means one leak = standing cloud access until someone rotates it. **OIDC** removes the stored key entirely: GitHub mints a short-lived, signed token at runtime that *proves* "this is repo X on branch Z"; your cloud trusts GitHub's issuer and swaps that proof for credentials that expire in minutes.
 

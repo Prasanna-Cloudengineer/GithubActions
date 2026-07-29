@@ -10,7 +10,7 @@
 #   Consumers then choose their risk level:
 #       @v1                -> auto-get non-breaking v1.x updates   (most people)
 #       @v1.2.3            -> exact, never moves
-#       @<full-sha>        -> maximum security pin                 (file 35)
+#       @<full-sha>        -> maximum security pin                 (file 36)
 #   A MAJOR bump (v1 -> v2) is your signal that something breaking changed, so
 #   `@v1` users are never surprised.
 #

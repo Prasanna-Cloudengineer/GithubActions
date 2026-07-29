@@ -24,7 +24,7 @@
 #   * `types:` filters which event_types you react to, so one repo can expose
 #     several external hooks (deploy-request, run-tests, rebuild-docs...).
 #   * Treat `client_payload` as UNTRUSTED input — pass it via `env:`, never
-#     inline it into a shell command (injection, same as file 38).
+#     inline it into a shell command (injection, same as file 39).
 #   * Sibling concept: `workflow_dispatch` is the manual UI button;
 #     `repository_dispatch` is its API-driven, machine-to-machine cousin.
 #

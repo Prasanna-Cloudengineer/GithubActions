@@ -1,19 +1,19 @@
 # 49 - 🚀 CAPSTONE: a fully hardened delivery pipeline
 #
-# The earlier pipeline capstone (file 34) proved the SHAPE of a pipeline. This one adds
+# The earlier pipeline capstone (file 35) proved the SHAPE of a pipeline. This one adds
 # every hardening lesson from this day on top, so it looks like something a
 # security-conscious team would actually run in production:
 #
-#   ✅ third-party actions PINNED TO SHA (35)     ✅ CodeQL code scanning (36)
-#   ✅ secret scanning gate (37)                  ✅ least-privilege permissions (30)
-#   ✅ Docker image BUILT & PUSHED to GHCR (44)   ✅ OIDC keyless cloud deploy (39)
+#   ✅ third-party actions PINNED TO SHA (36)     ✅ CodeQL code scanning (37)
+#   ✅ secret scanning gate (38)                  ✅ least-privilege permissions (30)
+#   ✅ Docker image BUILT & PUSHED to GHCR (44)   ✅ OIDC keyless cloud deploy (40)
 #   ✅ gated `production` environment (31)        ✅ build once, deploy same image
 #
 # 📋 SETUP (this is the advanced capstone — it expects real infrastructure):
 #   * The `sample-app/` folder, which ships the Dockerfile this builds (file 44).
 #   * A `production` environment with a required reviewer (file 31).
 #   * For the deploy: an AWS IAM role trusting this repo's OIDC `sub` claim, its
-#     ARN in vars.AWS_ROLE_ARN (file 39). Remove the OIDC step to run without a
+#     ARN in vars.AWS_ROLE_ARN (file 40). Remove the OIDC step to run without a
 #     cloud account.
 #   * SHAs below are EXAMPLES — pin to current ones (or let Dependabot do it).
 #
