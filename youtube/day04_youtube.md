@@ -65,7 +65,7 @@ Greens Technologys, Perumbakkam (https://maps.app.goo.gl/u34U3rXu8zPFfQh5A)
 🔹 Proving the restriction — watching a denied write return a clean 403
 🔹 Environments — `staging` and `production` as real deployment targets
 🔹 Environment-scoped secrets and variables, and deployment URLs on the run page
-🔹 Secret precedence — environment > repository > organization
+🔹 Secret precedence — most specific wins: environment, then repository, then organization
 🔹 Deployment protection rules — required reviewers, wait timers, branch policies
 🔹 Pausing a deploy until a human clicks **Approve**
 🔹 `concurrency` groups — cancelling stale PR builds
