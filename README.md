@@ -1078,6 +1078,47 @@ The three steps are always `codeql-action/init` → (build) → `codeql-action/a
 
 > 🔑 **The permission:** `security-events: write` (to upload results) — miss it and you get *"Resource not accessible by integration."* Free on public repos; needs GitHub Advanced Security on private ones. JS/Python need no build step; compiled languages need `autobuild` or a real build.
 
+### 🎬 Live demo — plant a bug and watch it get caught
+
+A clean repo shows "No alerts," which proves nothing to a class. [`sample-app/src/greet.js`](sample-app/src/greet.js) is committed **deliberately vulnerable** so the scan has something real to find. Nothing imports it, so it can't break `npm start` or `npm test`.
+
+**Part A — the alert that appears with zero configuration.** Copy `sample-app/` and this workflow into the practice repo and push to `main`. The `analyze` job takes ~2 minutes; then open **Security → Code scanning**:
+
+```js
+export function cleanReports() {
+  const reportDir = path.join(process.cwd(), 'reports');
+  execSync(`rm -rf ${reportDir}`);           // ⚠️ flagged
+}
+```
+
+The alert is **"Shell command built from environment values"** (`js/shell-command-injection-from-environment`). Click it: CodeQL doesn't just point at a line, it draws the **data-flow path** — `process.cwd()` → `path.join(…)` → the template string → `execSync`. That path view is the thing to linger on, because it's what separates real static analysis from grep. Then show the **fix** it suggests: not escaping the input, but never building a shell string — `execFileSync('rm', ['-rf', reportDir])`, where no shell parses anything.
+
+**Part B — the bug that *doesn't* show up.** The same file contains a second, more obviously dangerous bug, and the default scan says nothing about it:
+
+```js
+export function greet() {
+  const name = process.argv[2] || 'world';
+  execSync(`echo Hello, ${name}`);           // 🤫 silent by default
+}
+```
+
+`node src/greet.js "x; whoami"` runs both commands — yet no alert. Ask the class why, then uncomment one line in the workflow:
+
+```yaml
+- uses: github/codeql-action/init@v4
+  with:
+    languages: ${{ matrix.language }}
+    queries: security-extended     # ← adds medium-precision queries
+```
+
+Re-run, and a second alert appears: **"Indirect uncontrolled command line"** (`js/indirect-command-line-injection`).
+
+> 🔑 **Why the default suite hid a real bug.** CodeQL's default `code-scanning` suite admits only security queries at **`precision: high` or `very-high`**; `security-extended` also lets in **`medium`**. The argv query is medium precision, so it is *excluded by design* — the default is tuned so that a red alert is almost always a real bug, because a scanner that cries wolf gets switched off. `security-extended` trades that for recall. **A green Code scanning tab means "no high-confidence findings," not "no vulnerabilities"** — that distinction is the most useful thing in this whole section.
+
+**♻️ Resetting between runs:** fixing the code doesn't clear the tab immediately — an alert closes only after a *scan on the default branch* no longer sees it. To re-run the demo cleanly, close the alerts manually (**Dismiss → Used in tests**) or start a fresh repo.
+
+**What to observe:** the three steps run in order; a JS/TS analysis needs **no build step**; findings land on the exact line with a clickable source→sink path; and the same file yields **one** alert or **two** depending on nothing but the `queries:` line.
+
 ---
 
 ## 33 — Secret scanning & push protection
