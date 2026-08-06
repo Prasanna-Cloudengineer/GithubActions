@@ -1091,7 +1091,64 @@ Two layers stop credentials reaching the repo:
 | **Platform secret scanning + push protection** | Detects known token formats; **push protection blocks the `git push`** before a recognised secret lands | a repo **setting** (no YAML) |
 | **A scanner in CI** (here `gitleaks`) | Also catches generic high-entropy strings, private keys, `.env` files, and **fails the build** so a leak can't merge | this workflow |
 
+```mermaid
+flowchart LR
+    C["✍️ commit"] --> PP{"🛡️ push protection<br/>known provider formats"}
+    PP -->|"blocked"| X["❌ never reaches GitHub"]
+    PP -->|"allowed / bypassed"| R["📦 repo"]
+    R --> G{"🔎 gitleaks in CI<br/>+ generic & high-entropy"}
+    G -->|"leak found"| F["❌ build red,<br/>PR can't merge"]
+    G -->|"clean"| OK["✅ merge"]
+```
+
 > ⚠️ **If a secret was ever committed, rotate it.** Deleting the file does nothing — it lives forever in git history, clones, and forks. Treat any committed credential as burned: revoke and reissue. Use `fetch-depth: 0` so the scanner sees the full history, not just the tip.
+
+> 🔑 **Why `fetch-depth: 0` is not optional here.** The action scans a **commit range**, not your working tree — so a shallow clone means `base^` doesn't exist and commits go unscanned:
+>
+> | Event | What gitleaks scans |
+> |---|---|
+> | `pull_request` | `--no-merges --first-parent {base}^..{head}` — every commit in the PR |
+> | `push` | the pushed range, or just the tip when base == head |
+> | `workflow_dispatch` / `schedule` | **the entire history** |
+>
+> Exit code `2` means leaks found (that's what reddens the job); the run also uploads a `results.sarif` artifact.
+
+### 🎬 Live demo — watch both layers fire
+
+**📋 Setup (do this once, before the demo):** practice repo **public** and owned by a **personal account** — `gitleaks-action@v2` needs a `GITLEAKS_LICENSE` secret only for **organisation**-owned repos, personal accounts need none. Then Settings → Code security → turn on **Secret scanning** and **Push protection** (free on public repos, and repo-level push protection is **off by default**). Dry-run the whole thing once and throw that repo away — see the note at the end of Part B.
+
+**Part A — push protection blocks the commit.** On a branch, add `config/aws-credentials.txt` in the web editor:
+
+```
+[default]
+aws_access_key_id = AKIA-Z7QW3MNPLXK2TRVD
+aws_secret_access_key = wJalrXUtnFEMI2K7-MDENG3PxRfiCYZXMPLZKEYPZ
+```
+
+**Delete the two hyphens as you type it** — they're there because a valid-shaped key *cannot be committed to this repo*. Push protection rejected the very commit that added this section, naming both lines. That's your first proof the layer works, and it's worth showing the class: even the teaching notes can't hold a live-format credential.
+
+With the hyphens removed, GitHub refuses the commit **in the browser**, naming the secret and the line. Note what did *not* happen: no workflow ran, because the code never reached GitHub — that is the entire point of layer 1. Now click the bypass ("It's used in tests") to show the escape hatch exists, and say out loud that bypassing writes an alert to the **Security** tab and an entry to the **audit log** — it is visible, not silent. The commit lands, the workflow fires, and **gitleaks fails it anyway**: bypass the gate and CI still stops the merge.
+
+> ⚠️ **Don't reach for the famous AWS docs key.** `AKIAIOSFODNN7EXAMPLE` is allowlisted by gitleaks itself — its `aws-access-token` rule carries `regexes = ['''.+EXAMPLE$''']` — so the scan goes **green** and the demo dies in front of the class. A fake key must also stay inside the rule's charset: `AKIA` + 16 characters from `A-Z2-7` (base32 — no `0`, `1`, `8`, `9`, no lowercase).
+
+**Part B — gitleaks catches what the platform can't.** This is the half that justifies the workflow existing at all. On a second branch, add `secrets/deploy_key.pem`:
+
+```
+-----BEGIN RSA PRIVATE KEY-----
+MIIEowIBAAKCAQEAx7Jd9k2QpL0vN3mBcTfR8hYwZaE5uK1sD6gVnP4oQjXbHtCe
+0yWfM2rLkA9NvUiT7BxSdOq3ZgHpJmYcE8FaRlKn5wDtXvIbQr6UeMz1PsCjOhGy
+-----END RSA PRIVATE KEY-----
+```
+
+Open a PR. Platform scanning is built around **published provider token formats**; private keys and homegrown tokens are *non-provider* patterns a repo has to opt into. gitleaks has no such gap — its `private-key` rule is pure pattern matching (the headers plus ≥64 body characters, no entropy threshold), so it fires every time. The job goes red pointing at the exact **file, line and commit**, then the `if: failure()` step prints the rotate-don't-delete drill.
+
+> 💡 **Verified:** the commit that added this section carried the AWS key *and* the private key block above — push protection flagged only the two AWS lines and let the private key through, exactly the gap Part B is built on. If your repo *does* catch it, non-provider coverage is switched on there; swap in a homegrown format no provider on earth issues, which only gitleaks' `generic-api-key` rule (entropy ≥ 3.5 near a keyword like `token`) can see: `LWM_INTERNAL_TOKEN=k3Jd9vQ2xR7tLmZ8pW4bY6nC5hG1sT0a`
+
+> ⚠️ **PR comments need a permission this file deliberately doesn't grant.** The action defaults to `GITLEAKS_ENABLE_COMMENTS: true` and posts inline PR comments through the API — which least-privilege `permissions: contents: read` forbids. Add `pull-requests: write`, or set `GITLEAKS_ENABLE_COMMENTS: false`, or expect an API error in the log right beside the failure you're trying to show.
+
+**♻️ Resetting between runs:** delete the branch and close the PR, and close the Security-tab alert as "used in tests." Until you do, **every new run on that branch stays red** — which is itself the lesson: the secret is in the history now, and the only real fix is rotating it. For a genuinely clean second take, start a fresh throwaway repo.
+
+**What to observe:** layer 1 stops the commit **before** any workflow exists to run; layer 2 catches the leak layer 1 was never designed to see — and neither one un-leaks a credential that has already been pushed.
 
 ---
 
