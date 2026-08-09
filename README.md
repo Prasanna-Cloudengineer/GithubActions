@@ -1290,36 +1290,45 @@ permissions:
 
 > 🔑 **Scope trust with the `sub` claim.** On the cloud side, don't trust "any GitHub repo" — trust `repo:my-org/my-repo:ref:refs/heads/main` or `:environment:production`. That's what stops a token from a random branch or fork assuming your prod role. Same `id-token: write` for every cloud; only the login action differs (`azure/login`, `google-github-actions/auth`).
 
-### 📋 Connecting AWS to GitHub Actions — the whole setup
+### 📋 Connecting AWS to GitHub Actions — step by step
 
-Six steps, done once. Everything except the last is in the **AWS console**; nothing here is secret, and no key is ever created.
+Seven steps, done once. No access key is ever created, and nothing you produce here is a secret. The order matters: the GitHub side decides what the token says, so it comes **first**, and AWS is configured to match it.
 
-**1 — Register GitHub as an OIDC identity provider.** IAM → **Identity providers** → **Add provider** → **OpenID Connect**:
+**1 — Create the `production` environment on GitHub.** Settings → **Environments** → **New environment**, named exactly `production`, lowercase. [`40-oidc-cloud-auth.yml`](day-05/workflows/40-oidc-cloud-auth.yml) declares `environment: production`, and that is what puts `:environment:production` into the token. Leave it with no protection rules for now — a required reviewer pauses the job before it starts, which you want for the capstone (section 43) but not while you're wiring up credentials.
+
+**2 — Collect your repository's two numeric IDs.** Open these in a browser — no CLI, nothing installed:
+
+```
+https://api.github.com/users/OWNER      → "id": 40892267     ← owner ID
+https://api.github.com/repos/OWNER/REPO → "id": 1325262068   ← repo ID
+```
+
+**3 — Write down the exact subject your run will send.** This is the whole game, and it changed recently — on **15 July 2026** GitHub began appending **immutable numeric IDs** to the subject claim, so a repo that is deleted and recreated under the same name cannot inherit the old one's cloud access:
+
+| Repository | Subject claim |
+|---|---|
+| Created **before** 15 Jul 2026 | `repo:OWNER/REPO:environment:production` |
+| Created **after** 15 Jul 2026 | `repo:OWNER@40892267/REPO@1325262068:environment:production` |
+
+Any repo you create today is the second row. Note the shape — the IDs are **appended to the names with `@`**, they don't replace them:
+
+```
+repo:OWNER@40892267/REPO@1325262068:environment:production
+     └ owner ┘└ id ┘ └ repo ┘└─ id ─┘└─ how the job runs ─┘
+```
+
+> ⚠️ **The tail must match how the *job* runs, not just where the repo lives.** A job with `environment: production` ends `:environment:production`. The same job *without* that line ends `:ref:refs/heads/main` instead. Adding or removing an `environment:` silently changes the claim and stops a working role from matching.
+
+**4 — Register GitHub as an OIDC identity provider in AWS.** IAM → **Identity providers** → **Add provider** → **OpenID Connect**:
 
 | Field | Value |
 |---|---|
 | Provider URL | `https://token.actions.githubusercontent.com` |
 | Audience | `sts.amazonaws.com` |
 
-> 💡 **Ignore any tutorial that tells you to paste a thumbprint.** Since 2023 AWS validates GitHub's certificate against its trusted root CAs instead, and the thumbprint field is optional. The old advice to pin `6938fd4d…` is not just unnecessary, it's a future outage: the certificate rotates, and the pin doesn't.
+> 💡 **Ignore any guide that tells you to paste a thumbprint.** Since 2023 AWS validates GitHub's certificate against its trusted root CAs, and the field is optional. Pinning the old `6938fd4d…` value isn't just unnecessary — it's a scheduled outage, because the certificate rotates and the pin doesn't.
 
-**2 — Work out your exact `sub` claim.** Do this *before* writing the trust policy, because as of **15 July 2026 the format changed** and most material online is now wrong:
-
-| Repo | `sub` it emits |
-|---|---|
-| Created **before** 15 Jul 2026 | `repo:OWNER/REPO:environment:production` |
-| Created **after** 15 Jul 2026 | `repo:OWNER@1234567/REPO@89012345:environment:production` |
-
-New repositories append **immutable numeric IDs** so a deleted-and-recreated repo name can't inherit the old repo's cloud access. Any practice repo you create for this course is in the second row. Read your two IDs straight from the API in a browser — no CLI needed:
-
-```
-https://api.github.com/users/OWNER      → "id": 1234567     ← owner ID
-https://api.github.com/repos/OWNER/REPO → "id": 89012345    ← repo ID
-```
-
-> ⚠️ **The `sub` must match how the *job* runs, not just where the repo lives.** [`40-oidc-cloud-auth.yml`](day-05/workflows/40-oidc-cloud-auth.yml) declares `environment: production`, so its claim ends `:environment:production` — **not** `:ref:refs/heads/main`. Write a trust policy for the branch form and the run fails even though everything "looks right." Adding an `environment:` to a job later silently breaks a working role for the same reason.
-
-**3 — Create the role and its trust policy.** IAM → **Roles** → **Create role** → **Web identity**, pick the provider and `sts.amazonaws.com`, then edit the trust policy to pin the subject:
+**5 — Create the role from a custom trust policy.** IAM → **Roles** → **Create role** → **Custom trust policy** — *not* **Web identity**. The Web identity wizard demands a "GitHub organization" and then writes a subject in the old pre-July format with a trailing wildcard, which you'd have to rewrite anyway. Paste this instead, substituting your account ID, names, and the two IDs from step 2:
 
 ```json
 {
@@ -1329,37 +1338,37 @@ https://api.github.com/repos/OWNER/REPO → "id": 89012345    ← repo ID
     "Principal": { "Federated": "arn:aws:iam::AWS_ACCOUNT_ID:oidc-provider/token.actions.githubusercontent.com" },
     "Action": "sts:AssumeRoleWithWebIdentity",
     "Condition": {
-      "StringEquals": { "token.actions.githubusercontent.com:aud": "sts.amazonaws.com" },
-      "StringLike": {
-        "token.actions.githubusercontent.com:sub": [
-          "repo:OWNER/REPO:environment:production",
-          "repo:OWNER@*/REPO@*:environment:production"
-        ]
+      "StringEquals": {
+        "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+        "token.actions.githubusercontent.com:sub": "repo:OWNER@40892267/REPO@1325262068:environment:production"
       }
     }
   }]
 }
 ```
 
-Listing both forms means the role keeps working across the July 2026 change; once you've seen it succeed, pin the exact string with `StringEquals` and delete the other. **Never ship `repo:OWNER/REPO:*`** — that wildcard trusts every branch, every PR, and every environment, which hands your production role to anyone who can open a pull request.
+`StringEquals` against one exact subject is the goal state. **Never ship `repo:OWNER/REPO:*`** — that wildcard trusts every branch, every pull request, and every environment, which hands your production role to anyone who can open a PR.
 
-**4 — Attach a permissions policy.** The trust policy says *who may assume the role*; it grants **no AWS access at all**. What the role can actually do is a second, separate policy — start with the one action your deploy needs (`s3:PutObject` on one bucket), not `AdministratorAccess`. Conflating these two is the most common OIDC misconfiguration.
+**6 — Attach a permissions policy.** The trust policy decides *who may assume the role*; it grants **no AWS access whatsoever**. What the role can actually do is a second, separate policy. Start with the one action your deploy needs — `s3:PutObject` on a single bucket — not `AdministratorAccess`. Keeping these two ideas apart is most of what makes an OIDC setup safe.
 
-**5 — Publish the ARN as a repo *variable*.** Settings → Secrets and variables → Actions → **Variables** → New repository variable, named `AWS_ROLE_ARN`. A role ARN isn't a credential — it's useless without a matching trust policy — so it belongs in `vars`, not `secrets`, where it stays readable in logs and diffs.
+**7 — Publish the role ARN as a repository variable.** Settings → Secrets and variables → Actions → **Variables** → **New repository variable**, named `AWS_ROLE_ARN`. A role ARN is not a credential — it is useless to anyone without a matching trust policy — so it belongs in `vars`, readable in logs and diffs, not in `secrets`. Use a **repository** variable rather than an environment-scoped one: both `40` and the capstone `49` read the same value, and an environment-scoped variable resolves to an empty string in any job that doesn't declare that environment.
 
-**6 — Run it.** `aws sts get-caller-identity` should print an ARN like `arn:aws:sts::123456789012:assumed-role/GitHubActionsRole/GitHubActions`. Those credentials expire within the hour, and nothing was stored anywhere.
+**Confirming it works.** `aws sts get-caller-identity` prints the assumed-role ARN, and those credentials expire within the hour with nothing stored anywhere. To see the claim itself rather than infer it, add this step above the login step — it decodes only the `sub` and `aud` fields, never the token, which *is* a credential:
 
-**When it fails — the five errors you'll actually see:**
+```yaml
+      - name: Show this run's OIDC subject
+        run: |
+          TOKEN=$(curl -sSf \
+            -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=sts.amazonaws.com" | jq -r .value)
+          PAYLOAD=$(echo "$TOKEN" | cut -d. -f2 | tr '_-' '/+')
+          while [ $(( ${#PAYLOAD} % 4 )) -ne 0 ]; do PAYLOAD="${PAYLOAD}="; done
+          echo "$PAYLOAD" | base64 -d | jq '{sub, aud}'
+```
 
-| Message | What's wrong |
-|---|---|
-| `Unable to get ACTIONS_ID_TOKEN_REQUEST_URL` | Missing `id-token: write`. Never granted by default |
-| `Not authorized to perform sts:AssumeRoleWithWebIdentity` | The `sub` doesn't match. Since July 2026 this is usually the immutable-ID format (step 2), otherwise a branch/environment mismatch |
-| `Credentials could not be loaded` | `role-to-assume` resolved to empty — the variable is missing, or was added under **Secrets** instead of **Variables** |
-| `InvalidIdentityToken: incorrect audience` | Provider audience isn't `sts.amazonaws.com` |
-| Login succeeds, the **deploy** step gets `AccessDenied` | Trust policy is right, permissions policy (step 4) is too narrow — a good sign, not a bad one |
+Watching the subject come out of the token and then finding that same string in the IAM policy is what turns OIDC from magic into plumbing.
 
-> ⚠️ **The action is on v6.** [`40-oidc-cloud-auth.yml`](day-05/workflows/40-oidc-cloud-auth.yml) still says `aws-actions/configure-aws-credentials@v4`. v4 works, but v6 is current — and per section 31 you'd pin it to a SHA in anything real.
+> 💡 **Version note:** [`40-oidc-cloud-auth.yml`](day-05/workflows/40-oidc-cloud-auth.yml) pins `aws-actions/configure-aws-credentials@v4`; the action is now on **v6**. Either works — and per section 31, anything real pins it to a SHA.
 
 ---
 
