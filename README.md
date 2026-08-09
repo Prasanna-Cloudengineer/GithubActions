@@ -912,7 +912,7 @@ permissions:            # at the TOP of every workflow you write from now on
   # …and nothing else
 ```
 
-> 🔑 **The rule that makes this safe:** specifying `permissions:` **at all** sets every scope you *didn't* list to `none` — it is **not additive**. So a two-line block is already least-privilege; you never enumerate the other 15 scopes.
+> 🔑 **The rule that makes this safe:** specifying `permissions:` **at all** sets every scope you *didn't* list to `none` — it is **not additive**. So a two-line block is already least-privilege; you never enumerate the other 16 scopes.
 
 | Shortcut | Meaning |
 |---|---|
@@ -921,6 +921,61 @@ permissions:            # at the TOP of every workflow you write from now on
 | `permissions: {}` | nothing at all (pure compute jobs) |
 
 Put it at workflow level (all jobs) or per job (overrides the workflow). **Best practice:** read-only at the top, then elevate the one job that must write.
+
+### Every scope, and when you actually need it
+
+There are **17**. Each takes `read`, `write`, or `none` unless noted — and `write` always implies `read`. You will use maybe six of these in your career, but knowing the shape of the list is what lets you grant one scope instead of reaching for `write-all`.
+
+**Code, builds & releases**
+
+| Scope | What it controls | You need `write` when… |
+|---|---|---|
+| `contents` | Files, commits, branches, tags, **releases** | pushing a commit, tagging, or creating a Release — §41 |
+| `packages` | GitHub Packages, including **GHCR** | pushing a container image to `ghcr.io` — §38 |
+| `deployments` | Deployment records & their statuses | recording a deployment against an environment |
+| `pages` | GitHub Pages | triggering a Pages build or deploy |
+| `statuses` | Commit statuses (the ✓/✗ beside a SHA) | reporting an external system's result onto a commit |
+| `checks` | Check runs & check suites | publishing a test report or annotations as a check |
+
+**Issues & collaboration**
+
+| Scope | What it controls | You need `write` when… |
+|---|---|---|
+| `issues` | Issues, labels, comments | opening, labelling, commenting on, or closing an issue |
+| `pull-requests` | PRs, labels, review comments | labelling a PR or posting review comments — §33 |
+| `discussions` | GitHub Discussions | creating, answering, or closing a discussion |
+
+**Security & supply chain**
+
+| Scope | What it controls | You need `write` when… |
+|---|---|---|
+| `security-events` | Code scanning & Dependabot alerts (secret scanning is read-only) | uploading SARIF — **every CodeQL workflow** — §32 |
+| `attestations` | Artifact attestations (build provenance) | generating an attestation for a build |
+| `vulnerability-alerts` | Dependabot alerts | **never — `read` is the only level** |
+| `code-quality` | Code quality results | uploading code coverage reports |
+
+**CI plumbing**
+
+| Scope | What it controls | You need `write` when… |
+|---|---|---|
+| `actions` | Workflow runs, artifacts, caches | cancelling or re-running a workflow, deleting artifacts or caches |
+| `id-token` | Minting an **OIDC** token | **always — `write` is the only level**; keyless cloud auth — §35 |
+| `artifact-metadata` | Storage records for build artifacts | creating a storage record on behalf of an artifact |
+| `models` | GitHub Models (AI inference) | **never — `read` is the only level** |
+
+> 💡 **Three scopes break the read/write pattern**, and they trip people up: `id-token` is **write-only** (there is no `id-token: read` — a common copy-paste error that fails validation), while `vulnerability-alerts` and `models` are **read-only**. `vulnerability-alerts` is also folded in automatically as `read` whenever you use `read-all` or `write-all`.
+
+> ⚠️ **Forks are capped no matter what you write.** For a workflow triggered by a PR from a forked repo, the docs are explicit: you *"can use the `permissions` key to add and remove **read** permissions for forked repositories, but typically you can't grant **write** access."* So `permissions: contents: write` in a `pull_request` workflow silently gives a fork's PR nothing — which is exactly the safety property §34 is built on, and exactly why people reach for `pull_request_target` and get burned.
+
+**Reading it back from a run:** you never have to guess what a job got. Expand **"Set up job"** in any log and GitHub prints the granted set verbatim:
+
+```
+GITHUB_TOKEN Permissions
+  Contents: read
+  Issues: write
+```
+
+Scopes at `none` are simply absent from that list — so a short block there is proof least-privilege took effect, not evidence something failed to apply.
 
 **What to observe:** expand **"Set up job"** in each job's log — GitHub prints the exact scopes granted. The `zero-permissions` job proves the restriction by attempting a **write** (creating an issue) and getting a clean **403** — a write is denied unambiguously, whereas a public-repo read would succeed even with no scopes.
 
@@ -1234,6 +1289,77 @@ permissions:
 ```
 
 > 🔑 **Scope trust with the `sub` claim.** On the cloud side, don't trust "any GitHub repo" — trust `repo:my-org/my-repo:ref:refs/heads/main` or `:environment:production`. That's what stops a token from a random branch or fork assuming your prod role. Same `id-token: write` for every cloud; only the login action differs (`azure/login`, `google-github-actions/auth`).
+
+### 📋 Connecting AWS to GitHub Actions — the whole setup
+
+Six steps, done once. Everything except the last is in the **AWS console**; nothing here is secret, and no key is ever created.
+
+**1 — Register GitHub as an OIDC identity provider.** IAM → **Identity providers** → **Add provider** → **OpenID Connect**:
+
+| Field | Value |
+|---|---|
+| Provider URL | `https://token.actions.githubusercontent.com` |
+| Audience | `sts.amazonaws.com` |
+
+> 💡 **Ignore any tutorial that tells you to paste a thumbprint.** Since 2023 AWS validates GitHub's certificate against its trusted root CAs instead, and the thumbprint field is optional. The old advice to pin `6938fd4d…` is not just unnecessary, it's a future outage: the certificate rotates, and the pin doesn't.
+
+**2 — Work out your exact `sub` claim.** Do this *before* writing the trust policy, because as of **15 July 2026 the format changed** and most material online is now wrong:
+
+| Repo | `sub` it emits |
+|---|---|
+| Created **before** 15 Jul 2026 | `repo:OWNER/REPO:environment:production` |
+| Created **after** 15 Jul 2026 | `repo:OWNER@1234567/REPO@89012345:environment:production` |
+
+New repositories append **immutable numeric IDs** so a deleted-and-recreated repo name can't inherit the old repo's cloud access. Any practice repo you create for this course is in the second row. Read your two IDs straight from the API in a browser — no CLI needed:
+
+```
+https://api.github.com/users/OWNER      → "id": 1234567     ← owner ID
+https://api.github.com/repos/OWNER/REPO → "id": 89012345    ← repo ID
+```
+
+> ⚠️ **The `sub` must match how the *job* runs, not just where the repo lives.** [`40-oidc-cloud-auth.yml`](day-05/workflows/40-oidc-cloud-auth.yml) declares `environment: production`, so its claim ends `:environment:production` — **not** `:ref:refs/heads/main`. Write a trust policy for the branch form and the run fails even though everything "looks right." Adding an `environment:` to a job later silently breaks a working role for the same reason.
+
+**3 — Create the role and its trust policy.** IAM → **Roles** → **Create role** → **Web identity**, pick the provider and `sts.amazonaws.com`, then edit the trust policy to pin the subject:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": { "Federated": "arn:aws:iam::AWS_ACCOUNT_ID:oidc-provider/token.actions.githubusercontent.com" },
+    "Action": "sts:AssumeRoleWithWebIdentity",
+    "Condition": {
+      "StringEquals": { "token.actions.githubusercontent.com:aud": "sts.amazonaws.com" },
+      "StringLike": {
+        "token.actions.githubusercontent.com:sub": [
+          "repo:OWNER/REPO:environment:production",
+          "repo:OWNER@*/REPO@*:environment:production"
+        ]
+      }
+    }
+  }]
+}
+```
+
+Listing both forms means the role keeps working across the July 2026 change; once you've seen it succeed, pin the exact string with `StringEquals` and delete the other. **Never ship `repo:OWNER/REPO:*`** — that wildcard trusts every branch, every PR, and every environment, which hands your production role to anyone who can open a pull request.
+
+**4 — Attach a permissions policy.** The trust policy says *who may assume the role*; it grants **no AWS access at all**. What the role can actually do is a second, separate policy — start with the one action your deploy needs (`s3:PutObject` on one bucket), not `AdministratorAccess`. Conflating these two is the most common OIDC misconfiguration.
+
+**5 — Publish the ARN as a repo *variable*.** Settings → Secrets and variables → Actions → **Variables** → New repository variable, named `AWS_ROLE_ARN`. A role ARN isn't a credential — it's useless without a matching trust policy — so it belongs in `vars`, not `secrets`, where it stays readable in logs and diffs.
+
+**6 — Run it.** `aws sts get-caller-identity` should print an ARN like `arn:aws:sts::123456789012:assumed-role/GitHubActionsRole/GitHubActions`. Those credentials expire within the hour, and nothing was stored anywhere.
+
+**When it fails — the five errors you'll actually see:**
+
+| Message | What's wrong |
+|---|---|
+| `Unable to get ACTIONS_ID_TOKEN_REQUEST_URL` | Missing `id-token: write`. Never granted by default |
+| `Not authorized to perform sts:AssumeRoleWithWebIdentity` | The `sub` doesn't match. Since July 2026 this is usually the immutable-ID format (step 2), otherwise a branch/environment mismatch |
+| `Credentials could not be loaded` | `role-to-assume` resolved to empty — the variable is missing, or was added under **Secrets** instead of **Variables** |
+| `InvalidIdentityToken: incorrect audience` | Provider audience isn't `sts.amazonaws.com` |
+| Login succeeds, the **deploy** step gets `AccessDenied` | Trust policy is right, permissions policy (step 4) is too narrow — a good sign, not a bad one |
+
+> ⚠️ **The action is on v6.** [`40-oidc-cloud-auth.yml`](day-05/workflows/40-oidc-cloud-auth.yml) still says `aws-actions/configure-aws-credentials@v4`. v4 works, but v6 is current — and per section 31 you'd pin it to a SHA in anything real.
 
 ---
 
