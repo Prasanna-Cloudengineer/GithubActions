@@ -1,4 +1,4 @@
-# 49 - 🚀 CAPSTONE: a fully hardened delivery pipeline
+# 48 - 🚀 CAPSTONE: a fully hardened delivery pipeline
 #
 # The earlier pipeline capstone (file 35) proved the SHAPE of a pipeline. This one adds
 # every hardening lesson from this day on top, so it looks like something a
@@ -28,7 +28,7 @@
 # then authenticates to the cloud with a short-lived OIDC token — no stored
 # cloud key anywhere in the repo.
 
-name: 49 - Hardened Capstone
+name: 48 - Hardened Capstone
 
 on:
   push:

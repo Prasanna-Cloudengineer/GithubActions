@@ -1,4 +1,4 @@
-# 48 - Debugging workflows: logs, re-runs, and running locally with `act`
+# 47 - Debugging workflows: logs, re-runs, and running locally with `act`
 #
 # When a workflow misbehaves, you have four tools, cheapest first.
 #
@@ -36,7 +36,7 @@
 # with debug logging enabled and the same line now appears, alongside the extra
 # runner tracing.
 
-name: 48 - Debugging & act
+name: 47 - Debugging & act
 
 on:
   workflow_dispatch:

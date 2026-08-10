@@ -1,4 +1,4 @@
-// The app's ENTRY POINT — the thing the Docker image runs (files 44 and 49).
+// The app's ENTRY POINT — the thing the Docker image runs (files 44 and 48).
 // Everything else in this folder is a library; this is the process.
 //
 // Still zero dependencies: Node's standard library only, so `docker build`

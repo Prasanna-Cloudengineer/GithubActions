@@ -1,4 +1,4 @@
-# The image files 44 and 49 build and push to GHCR.
+# The image files 44 and 48 build and push to GHCR.
 #
 # Deliberately boring: one stage, an official base image, no root. The lesson
 # is the pipeline, not the Dockerfile — but the two habits below are the ones

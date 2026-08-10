@@ -53,5 +53,5 @@ Most files work with just the folder as-is. The exceptions:
   the current `package.json`. A `sample-app` copied during Day 1 lacks the
   `build` script and fails with `npm error Missing script: "build"`.
 - **26** (matrix artifacts) writes `reports/` — gitignored, produced per run.
-- **44 / 49** (GHCR) build the `Dockerfile` with **`context: ./sample-app`**.
-- **36 / 49** (CodeQL) scan `src/` as `javascript-typescript`.
+- **44 / 48** (GHCR) build the `Dockerfile` with **`context: ./sample-app`**.
+- **36 / 48** (CodeQL) scan `src/` as `javascript-typescript`.

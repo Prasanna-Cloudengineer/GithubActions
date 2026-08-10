@@ -72,9 +72,8 @@ Everything is taught against the **current (2026) GitHub Actions platform** — 
 38. [Build & push a Docker image to GHCR](#38--build--push-a-docker-image-to-ghcr)
 39. [Custom JavaScript actions](#39--custom-javascript-actions)
 40. [Custom Docker container actions](#40--custom-docker-container-actions)
-41. [Publishing & versioning your own action](#41--publishing--versioning-your-own-action)
-42. [Debugging & running locally with `act`](#42--debugging--running-locally-with-act)
-43. [🚀 The hardened pipeline (capstone)](#43---the-hardened-pipeline-capstone)
+41. [Debugging & running locally with `act`](#41--debugging--running-locally-with-act)
+42. [🚀 The hardened pipeline (capstone)](#42---the-hardened-pipeline-capstone)
 
 **Reference**
 
@@ -113,7 +112,7 @@ flowchart LR
 4. Scroll down → **Commit changes** (commit directly to `main` for practice).
 5. Click the **Actions** tab to watch it run.
 
-> 💡 **Where the files live in this repo:** the copy-paste YAML files are numbered in teaching order and grouped into folders — files `01`–`11` in [`day-01/workflows/`](day-01/workflows/), `12`–`19` in [`day-02/workflows/`](day-02/workflows/), `20`–`29` in [`day-03/workflows/`](day-03/workflows/), `30`–`35` in [`day-04/workflows/`](day-04/workflows/), and `36`–`49` in [`day-05/workflows/`](day-05/workflows/) — custom actions live in each day's `actions/` folder. The numbers run continuously from `01` to `49` with no gaps, so just follow them in sequence. The sample app is in [`sample-app/`](sample-app/) at the repo root.
+> 💡 **Where the files live in this repo:** the copy-paste YAML files are numbered in teaching order and grouped into folders — files `01`–`11` in [`day-01/workflows/`](day-01/workflows/), `12`–`19` in [`day-02/workflows/`](day-02/workflows/), `20`–`29` in [`day-03/workflows/`](day-03/workflows/), `30`–`35` in [`day-04/workflows/`](day-04/workflows/), and `36`–`48` in [`day-05/workflows/`](day-05/workflows/) — custom actions live in each day's `actions/` folder. The numbers run continuously from `01` to `48` with no gaps, so just follow them in sequence. The sample app is in [`sample-app/`](sample-app/) at the repo root.
 >
 > 📦 **Everything is prebuilt — nothing to generate.** Clone or download this repo and you get every workflow file plus a complete, ready-to-run sample app, `package-lock.json` included. There is no setup step, no `npm install` on your machine, and no lockfile to create. Copy, commit, watch it run.
 
@@ -930,7 +929,7 @@ There are **17**. Each takes `read`, `write`, or `none` unless noted — and `wr
 
 | Scope | What it controls | You need `write` when… |
 |---|---|---|
-| `contents` | Files, commits, branches, tags, **releases** | pushing a commit, tagging, or creating a Release — §41 |
+| `contents` | Files, commits, branches, tags, **releases** | pushing a commit, tagging, or creating a Release |
 | `packages` | GitHub Packages, including **GHCR** | pushing a container image to `ghcr.io` — §38 |
 | `deployments` | Deployment records & their statuses | recording a deployment against an environment |
 | `pages` | GitHub Pages | triggering a Pages build or deploy |
@@ -1094,9 +1093,9 @@ It combines least-privilege `permissions`, PR-only `concurrency` cancellation, a
 
 # Day 5 — Finale: security, OIDC, custom actions & publishing
 
-**Goal:** take the gated pipeline and harden it the way real security teams do — pin the supply chain to immutable **SHAs**, scan code with **CodeQL** and catch leaked **secrets**, defuse untrusted pull requests, authenticate to the cloud with **no stored keys** via **OIDC**, then build your **own actions** (JavaScript and Docker), push a **Docker image to GHCR**, and version and publish an action — ending in a fully **hardened capstone**.
+**Goal:** take the gated pipeline and harden it the way real security teams do — pin the supply chain to immutable **SHAs**, scan code with **CodeQL** and catch leaked **secrets**, defuse untrusted pull requests, authenticate to the cloud with **no stored keys** via **OIDC**, then build your **own actions** (JavaScript and Docker) and push a **Docker image to GHCR** — ending in a fully **hardened capstone**.
 
-The workflow files are in [`day-05/workflows/`](day-05/workflows/) (`36`–`49`), with the custom actions in [`day-05/actions/`](day-05/actions/).
+The workflow files are in [`day-05/workflows/`](day-05/workflows/) (`36`–`48`), with the custom actions in [`day-05/actions/`](day-05/actions/).
 
 ## 31 — Supply-chain security: pin actions to a SHA
 
@@ -1351,7 +1350,7 @@ repo:OWNER@40892267/REPO@1325262068:environment:production
 
 **6 — Attach a permissions policy.** The trust policy decides *who may assume the role*; it grants **no AWS access whatsoever**. What the role can actually do is a second, separate policy. Start with the one action your deploy needs — `s3:PutObject` on a single bucket — not `AdministratorAccess`. Keeping these two ideas apart is most of what makes an OIDC setup safe.
 
-**7 — Publish the role ARN as a repository variable.** Settings → Secrets and variables → Actions → **Variables** → **New repository variable**, named `AWS_ROLE_ARN`. A role ARN is not a credential — it is useless to anyone without a matching trust policy — so it belongs in `vars`, readable in logs and diffs, not in `secrets`. Use a **repository** variable rather than an environment-scoped one: both `40` and the capstone `49` read the same value, and an environment-scoped variable resolves to an empty string in any job that doesn't declare that environment.
+**7 — Publish the role ARN as a repository variable.** Settings → Secrets and variables → Actions → **Variables** → **New repository variable**, named `AWS_ROLE_ARN`. A role ARN is not a credential — it is useless to anyone without a matching trust policy — so it belongs in `vars`, readable in logs and diffs, not in `secrets`. Use a **repository** variable rather than an environment-scoped one: both `40` and the capstone `48` read the same value, and an environment-scoped variable resolves to an empty string in any job that doesn't declare that environment.
 
 **Confirming it works.** `aws sts get-caller-identity` prints the assumed-role ARN, and those credentials expire within the hour with nothing stored anywhere. To see the claim itself rather than infer it, add this step above the login step — it decodes only the `sub` and `aud` fields, never the token, which *is* a credential:
 
@@ -1481,28 +1480,9 @@ Inputs arrive as `INPUT_<NAME>` env vars; outputs go to `$GITHUB_OUTPUT`, which 
 
 ---
 
-## 41 — Publishing & versioning your own action
+## 41 — Debugging & running locally with `act`
 
-### ▶️ [`47-publish-custom-action.yml`](day-05/workflows/47-publish-custom-action.yml)
-
-Once an action lives in its own repo, others consume it as `uses: your-org/action@SOMETHING`. The convention everyone follows:
-
-- Cut a real **semver** release for each version: `v1.0.0`, `v1.1.0`, `v2.0.0`.
-- **Also** keep a **moving major tag** `v1` that always points at the latest `v1.x`.
-
-```yaml
-@v1        → auto non-breaking v1.x updates   (most consumers)
-@v1.2.3    → exact, never moves
-@<sha>     → maximum security pin             (§31)
-```
-
-> 🔑 **The moving-tag trick:** after publishing `v1.4.0`, force-move `v1` to that commit (`git tag -f v1 v1.4.0 && git push --force origin v1`) — the whole maintenance job, automated by the release workflow. Publishing to the **Marketplace** is a manual step: draft a release and tick *"Publish this Action to the Marketplace"* (needs a root `action.yml` with `name`, `description`, `branding`).
-
----
-
-## 42 — Debugging & running locally with `act`
-
-### ▶️ [`48-debugging-and-act.yml`](day-05/workflows/48-debugging-and-act.yml)
+### ▶️ [`47-debugging-and-act.yml`](day-05/workflows/47-debugging-and-act.yml)
 
 Four tools, cheapest first:
 
@@ -1515,9 +1495,9 @@ Four tools, cheapest first:
 
 ---
 
-## 43 — 🚀 The hardened pipeline (capstone)
+## 42 — 🚀 The hardened pipeline (capstone)
 
-### ▶️ [`49-hardened-capstone.yml`](day-05/workflows/49-hardened-capstone.yml)
+### ▶️ [`48-hardened-capstone.yml`](day-05/workflows/48-hardened-capstone.yml)
 
 Every lesson from this day layered onto the earlier pipeline shape:
 
@@ -1620,7 +1600,6 @@ jobs:                        # WHAT runs (parallel by default)
 | Deploy without stored keys | `permissions: { id-token: write }` + cloud login action (OIDC) |
 | Publish an image to GHCR | `docker/login-action` + `build-push-action` (`packages: write`); add `setup-buildx-action` if you use `cache-to` |
 | Reuse real logic | JS action (`using: node20`) or Docker action (`using: docker`) |
-| Version your action | semver tag `v1.2.3` + moving major tag `v1` |
 | Trigger from outside GitHub | `on: repository_dispatch` (API `POST /dispatches`) |
 
 ---
@@ -1659,8 +1638,8 @@ From *"I've never written a line of YAML"* to a **hardened, gated, keyless CI/CD
 - **The workflow language** — variables, contexts, secrets, and your first full CI pipeline
 - **Real pipelines** — `needs`, `if`, matrix, caching, artifacts, reusable workflows, composite actions
 - **Gated deploys** — least-privilege permissions, environments with approvals, concurrency, timeouts, self-hosted runners, and a production pipeline
-- **Hardened & published** — SHA pinning, CodeQL & secret scanning, untrusted-PR safety, OIDC keyless cloud auth, custom JavaScript/Docker actions, GHCR, and publishing your own action
+- **Hardened & built** — SHA pinning, CodeQL & secret scanning, untrusted-PR safety, OIDC keyless cloud auth, custom JavaScript/Docker actions, and GHCR
 
-**Where to go from here:** build the [`49-hardened-capstone.yml`](day-05/workflows/49-hardened-capstone.yml) against your own project, wire OIDC to your real cloud account, publish an action you actually use, and turn on branch protection so every merge runs through the pipeline. The master blueprint is in [`COURSE_OUTLINE.md`](COURSE_OUTLINE.md).
+**Where to go from here:** build the [`48-hardened-capstone.yml`](day-05/workflows/48-hardened-capstone.yml) against your own project, wire OIDC to your real cloud account, and turn on branch protection so every merge runs through the pipeline.
 
 Thanks for building along. If the series helped you, a like and subscribe on **LearnWithMithran** means a lot. 🚀
