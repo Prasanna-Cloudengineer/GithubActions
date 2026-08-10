@@ -1465,6 +1465,20 @@ runs:
 
 Inputs arrive as `INPUT_<NAME>` env vars; outputs go to `$GITHUB_OUTPUT`, which GitHub bind-mounts into the container.
 
+> ⚠️ **The error that lies to you — if the build succeeds but the step dies with:**
+>
+> ```
+> exec /entrypoint.sh: no such file or directory
+> ```
+>
+> The script is not missing. **The interpreter is.** A script saved on Windows has CRLF line endings, so the shebang reads `#!/bin/sh\r` — Linux looks for a program literally named `/bin/sh\r`, doesn't find it, and Docker blames the entrypoint. Fix it by saving the file with **LF** endings (VS Code: click `CRLF` in the bottom-right status bar → `LF`), and harden the image so it can't happen again:
+>
+> ```dockerfile
+> RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
+> ```
+>
+> A repo-root `.gitattributes` containing `*.sh text eol=lf` stops Git from reintroducing CRLF on every Windows checkout.
+
 ---
 
 ## 41 — Publishing & versioning your own action

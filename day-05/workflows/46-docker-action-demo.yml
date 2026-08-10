@@ -12,6 +12,11 @@
 #      log), so it's slower than a JS action. Publishing the image to GHCR and
 #      referencing `image: docker://ghcr.io/...` skips that per-run build.
 #   3. Same local-action rule: `actions/checkout` must run first.
+#   4. `entrypoint.sh` MUST be saved with LF (Unix) line endings. Upload a CRLF
+#      copy — easy to do from Windows — and the build succeeds but the step
+#      fails with `exec /entrypoint.sh: no such file or directory`. The script
+#      is present; the shebang just became `#!/bin/sh\r`, so Linux hunts for an
+#      interpreter named `/bin/sh\r`. The Dockerfile now `sed`s the \r out.
 #
 # WHAT TO OBSERVE: expand the greet step and watch Docker build the Alpine
 # image, then the entrypoint prints "Hello from inside a container, ...". The

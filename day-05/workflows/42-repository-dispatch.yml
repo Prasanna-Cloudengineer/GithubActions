@@ -8,16 +8,17 @@
 # HOW IT FIRES: something POSTs to the repo's dispatches endpoint with a
 # personal access token (or an app token) that has `contents: write`:
 #
-
-export GH_PAT="ghp_1234567890abcdef"   # a PAT with repo write access
-curl -X POST \
-  -H "Authorization: Bearer $GH_PAT" \
-  -H "Accept: application/vnd.github+json" \
-  https://api.github.com/repos/Iam-mithran/delmeee/dispatches \
-  -d '{"event_type":"deploy-request",
-       "client_payload":{"environment":"staging","version":"1.4.2"}}'
-
-
+#   export GH_PAT="<your-pat-here>"   # a PAT with repo write access
+#   # ^ NEVER paste a real token into a file, a commit, a screen recording, or
+#   #   a chat. Read it from your shell env or a secret manager. GitHub scans
+#   #   public pushes for token patterns and auto-revokes what it finds — but
+#   #   only after it has already been published.
+#   curl -X POST \
+#     -H "Authorization: Bearer $GH_PAT" \
+#     -H "Accept: application/vnd.github+json" \
+#     https://api.github.com/repos/OWNER/REPO/dispatches \
+#     -d '{"event_type":"deploy-request",
+#          "client_payload":{"environment":"staging","version":"1.4.2"}}'
 #
 #   * event_type     -> an arbitrary label YOU choose; match it with `types:`.
 #   * client_payload -> any JSON you want to pass in, readable in the workflow
