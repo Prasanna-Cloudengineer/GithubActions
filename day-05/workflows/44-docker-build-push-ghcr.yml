@@ -10,7 +10,10 @@
 #    the publishing job. `contents: read` is needed to check out the code;
 #    `id-token: write` is added when you also want build PROVENANCE/attestations.
 #
-# THE THREE ACTIONS THAT DO THE WORK:
+# THE FOUR ACTIONS THAT DO THE WORK:
+#   docker/setup-buildx-action -> swap the runner's plain `docker` builder for a
+#                              real BuildKit builder (the `docker-container`
+#                              driver). Required for cache export — see below.
 #   docker/login-action     -> log in to ghcr.io using ${{ github.actor }} +
 #                              the GITHUB_TOKEN. No PAT, no stored secret.
 #   docker/metadata-action  -> generate smart TAGS and labels from git context
@@ -18,6 +21,17 @@
 #                              them. This is the piece people skip and regret.
 #   docker/build-push-action -> build the Dockerfile and push in one step, with
 #                              layer caching via GitHub Actions cache.
+#
+# ⚠️ THE ERROR YOU'LL HIT IF YOU SKIP setup-buildx-action:
+#      ERROR: failed to solve: Cache export is not supported for the docker driver.
+#      Switch to a different driver, or turn on the containerd image store...
+#      Learn more at https://docs.docker.com/go/build-cache-backends/
+#      buildx failed with: ...
+#    The default builder on the runner is the `docker` driver: it can build and
+#    push fine, but it CANNOT export a cache, so the run dies the instant it
+#    reaches `cache-to: type=gha`. Nothing is wrong with your Dockerfile — the
+#    build never gets that far. setup-buildx-action fixes it (and installs a
+#    current buildx, which the GHA cache backend also needs).
 #
 # TAGGING, DONE RIGHT: `metadata-action` turns `v1.2.3` into `1.2.3`, `1.2`,
 # `1`, and `latest`; a branch push into `main`; every push into a `sha-abc123`
@@ -55,6 +69,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v4   # 🔑 without this, `cache-to` fails
 
       - name: Log in to GHCR
         uses: docker/login-action@v4

@@ -27,7 +27,7 @@
 # `run-id: github.event.workflow_run.id` (and a github-token), or read outputs
 # the upstream job exposed.
 #
-# WHAT TO OBSERVE: trigger the upstream workflow (e.g. run "35 - SHA Pinning").
+# WHAT TO OBSERVE: trigger the upstream workflow (e.g. run "36 - SHA Pinning").
 # When it completes on the default branch, THIS workflow starts on its own and
 # reports the upstream conclusion.
 
@@ -35,7 +35,7 @@ name: 41 - Workflow Run Chaining
 
 on:
   workflow_run:
-    workflows: ["35 - SHA Pinning"]    # the upstream workflow's `name:`
+    workflows: ["36 - SHA Pinning"]    # the upstream workflow's `name:`
     types: [completed]
     branches: [main]
 

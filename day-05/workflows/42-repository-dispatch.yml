@@ -8,12 +8,16 @@
 # HOW IT FIRES: something POSTs to the repo's dispatches endpoint with a
 # personal access token (or an app token) that has `contents: write`:
 #
-#   curl -X POST \
-#     -H "Authorization: Bearer $GH_PAT" \
-#     -H "Accept: application/vnd.github+json" \
-#     https://api.github.com/repos/OWNER/REPO/dispatches \
-#     -d '{"event_type":"deploy-request",
-#          "client_payload":{"environment":"staging","version":"1.4.2"}}'
+
+export GH_PAT="ghp_1234567890abcdef"   # a PAT with repo write access
+curl -X POST \
+  -H "Authorization: Bearer $GH_PAT" \
+  -H "Accept: application/vnd.github+json" \
+  https://api.github.com/repos/Iam-mithran/delmeee/dispatches \
+  -d '{"event_type":"deploy-request",
+       "client_payload":{"environment":"staging","version":"1.4.2"}}'
+
+
 #
 #   * event_type     -> an arbitrary label YOU choose; match it with `types:`.
 #   * client_payload -> any JSON you want to pass in, readable in the workflow
@@ -30,7 +34,7 @@
 #
 # WHAT TO OBSERVE: you can't click this one in the UI. Fire the curl above (with
 # a PAT) and watch the run appear, carrying whatever you put in client_payload.
-
+---
 name: 42 - Repository Dispatch
 
 on:

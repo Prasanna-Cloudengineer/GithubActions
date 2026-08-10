@@ -1411,14 +1411,16 @@ build-app:
 
 ### ▶️ [`44-docker-build-push-ghcr.yml`](day-05/workflows/44-docker-build-push-ghcr.yml)
 
-**GHCR** (`ghcr.io`) is GitHub's built-in container registry — publish an image with no external account, authenticating with the automatic `GITHUB_TOKEN`. Three actions do the work:
+**GHCR** (`ghcr.io`) is GitHub's built-in container registry — publish an image with no external account, authenticating with the automatic `GITHUB_TOKEN`. Four actions do the work:
 
 ```mermaid
 flowchart LR
-    L["docker/login-action<br/>→ ghcr.io"] --> M["docker/metadata-action<br/>→ smart tags"] --> B["docker/build-push-action<br/>→ build + push + cache"]
+    X["docker/setup-buildx-action<br/>→ real BuildKit builder"] --> L["docker/login-action<br/>→ ghcr.io"] --> M["docker/metadata-action<br/>→ smart tags"] --> B["docker/build-push-action<br/>→ build + push + cache"]
 ```
 
 > 🔑 **The permission:** `packages: write` (GHCR is a "package"). `metadata-action` turns a `v1.2.3` tag into `1.2.3`, `1.2`, `1`, `latest` and every push into a `sha-…` tag, so you never hand-write tags. Add `id-token: write` for signed build provenance. The image appears under the repo's **Packages**, pullable with `docker pull ghcr.io/OWNER/REPO:latest`.
+
+> ⚠️ **The error everyone hits:** leave out `docker/setup-buildx-action` and the run ends with `Cache export is not supported for the docker driver` / `buildx failed with: … build-cache-backends/`. The runner's default builder is the plain **`docker` driver** — it builds and pushes fine but cannot export a cache, so the job dies the moment it reaches `cache-to: type=gha`. It is not your Dockerfile. Add the setup step (it also installs a current buildx, which the GHA cache backend requires) — or drop both `cache-from`/`cache-to` if you don't want caching.
 
 > 📋 **Setup:** none beyond the app — [`sample-app/Dockerfile`](sample-app/Dockerfile) ships with the course. Note `context: ./sample-app` in the build step: the context is the **folder holding the Dockerfile**, and every `COPY` inside it is relative to that, not to the repo root.
 
@@ -1602,7 +1604,7 @@ jobs:                        # WHAT runs (parallel by default)
 | Pin an action safely | `uses: owner/action@<full-sha>  # v1.2.3` |
 | Scan code for vulns | `github/codeql-action/init` + `analyze` (`security-events: write`) |
 | Deploy without stored keys | `permissions: { id-token: write }` + cloud login action (OIDC) |
-| Publish an image to GHCR | `docker/login-action` + `build-push-action` (`packages: write`) |
+| Publish an image to GHCR | `docker/login-action` + `build-push-action` (`packages: write`); add `setup-buildx-action` if you use `cache-to` |
 | Reuse real logic | JS action (`using: node20`) or Docker action (`using: docker`) |
 | Version your action | semver tag `v1.2.3` + moving major tag `v1` |
 | Trigger from outside GitHub | `on: repository_dispatch` (API `POST /dispatches`) |
